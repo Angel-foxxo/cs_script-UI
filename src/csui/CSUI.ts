@@ -3,8 +3,8 @@
 
 import { Euler, Vec3 } from "@s2ze/math";
 import { BaseModelEntity, Color, CSInputs, CSPlayerPawn, Entity, Instance, PointTemplate } from "cs_script/point_script";
-import { Font } from "./fonts/font";
-import { Fonts, FontsMap, GetGlyphIndex } from "./fonts/font_definitions";
+import { Font } from "./font";
+import { Fonts, FontsMap, GetGlyphIndex } from "./font_definitions";
 
 const ANIM_EPS = 0.001;
 const PANEL_Z_INCREMENT: number = 0.1;
@@ -1005,7 +1005,7 @@ export class TextUIPanel extends BaseUIPanel
         this.ParticleTextPanelTemplate = Instance.FindEntityByName(`*CSUI.particle.font.panel.${this.Font.FontName}.template`) as PointTemplate;
         if (this.ParticleTextPanelTemplate === undefined || !this.ParticleTextPanelTemplate.IsValid())
         {
-            Log("Failed to find particle font panel template! Did you forget to recompile your map after running FontAtlasBuilder?");
+            Log("Failed to find particle font panel template! Did you forget to recompile your map (entity only compile will do) after running FontAtlasBuilder?");
         }
         
         this.Text = text;

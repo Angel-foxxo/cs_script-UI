@@ -1,7 +1,7 @@
 import { Color, Instance } from "cs_script/point_script";
 import { AlignX, AlignY, Flow, Size, TextUIPanel, UI, UIPanel, UISetDebug } from "./CSUI";
 import { Euler, Vec3 } from "@s2ze/math";
-import { Fonts } from "./fonts/font_definitions";
+import { Fonts } from "./font_definitions";
 
 Instance.ServerCommand("mp_warmup_offline_enabled 1");
 Instance.ServerCommand("mp_warmup_pausetimer 1");
@@ -92,7 +92,7 @@ function SpawnUI()
             Padding: 4,
         };
 
-        const textPanel = new TextUIPanel(menuItemPanel, Fonts.Georgia_Regular, menuItems[i]);
+        const textPanel = new TextUIPanel(menuItemPanel, Fonts.Roboto_Regular, menuItems[i]);
         textPanel.Layout = {
             Width: Size.Grow,
             Height: 1,
