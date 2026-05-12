@@ -1005,7 +1005,7 @@ export class TextUIPanel extends BaseUIPanel
         this.ParticleTextPanelTemplate = Instance.FindEntityByName(`*CSUI.particle.font.panel.${this.Font.FontName}.template`) as PointTemplate;
         if (this.ParticleTextPanelTemplate === undefined || !this.ParticleTextPanelTemplate.IsValid())
         {
-            Log("Failed to find particle text panel template");
+            Log("Failed to find particle font panel template! Did you forget to recompile your map after running FontAtlasBuilder?");
         }
         
         this.Text = text;
@@ -1013,23 +1013,30 @@ export class TextUIPanel extends BaseUIPanel
 
     protected Render(worldTransforms: Transforms): void
     {
-        const textAssembly = this.Font.AssembleText(this.Text, this.InheritedScale);
+        const scale = this.InheritedScale;
 
-        for (let i = 0; i < textAssembly.length; i++) 
+        let pen = 0;
+        for (let i = 0; i < this.Text.length; i++) 
         {
-            const textObject = textAssembly[i];
+            const char = this.Text[i];
+            const glyph = this.Font.GetGlyph(char);
 
-            const alignmentOffset = (textObject.w) / 2;
+            const glyphWidth = glyph.pixelW * scale;
+            const glyphHeight = glyph.pixelH * scale;
+            
+            const alignmentOffset = (glyphWidth) / 2;
 
-            const index = (GetGlyphIndex(textObject.char) ?? 72) - 0.01;
+            const index = (GetGlyphIndex(char) ?? 72) - 0.01;
 
             Instance.EntFireAtTarget({ target: this.TextEnts[i], input: "SetControlPoint", value: `2: ${this.UI.Brightness} ${this.Color.a} ${index}` });
-            Instance.EntFireAtTarget({ target: this.TextEnts[i], input: "SetControlPoint", value: `3: ${textObject.h} ${textObject.w} 0` });
+            Instance.EntFireAtTarget({ target: this.TextEnts[i], input: "SetControlPoint", value: `3: ${glyphHeight} ${glyphWidth} 0` });
             
             Instance.EntFireAtTarget({ target: this.TextEnts[i], input: "SetControlPoint", value: `1: ${this.Color.r} ${this.Color.g} ${this.Color.b}` });
-            this.TextEnts[i].Teleport({ position: worldTransforms.Origin.add(this.UI.Angles.left.multiply((textObject.x + alignmentOffset)).add(this.UI.Angles.up.multiply(textObject.y))), 
+            this.TextEnts[i].Teleport({ position: worldTransforms.Origin.add(this.UI.Angles.left.multiply((pen + alignmentOffset))), 
                 angles: this.UI.Angles,
             });
+
+            pen += glyph.advance * scale;
         }
     }
 

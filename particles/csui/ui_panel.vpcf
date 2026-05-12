@@ -1375,6 +1375,9 @@
 			m_nField = 2
 			m_flInputMax = 255.0
 		},
+		{
+			_class = "C_OP_EndCapTimedDecay"
+		},
 	]
 	m_Renderers = 
 	[

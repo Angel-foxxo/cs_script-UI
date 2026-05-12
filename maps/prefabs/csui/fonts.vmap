@@ -52,7 +52,7 @@
             "CMapEntity"
             {
                 "id" "elementid" "62035e16-af70-4641-8e57-4795ff6ed0dc"
-                "hitNormal" "vector3" "16 0 32"
+                "hitNormal" "vector3" "0 0 32"
                 "isProceduralEntity" "bool" "0"
                 "relayPlugData" "DmePlugList"
                 {
@@ -92,157 +92,13 @@
             
             "CMapEntity"
             {
-                "id" "elementid" "58b18247-aeff-4bd1-9081-8dacc6102a14"
-                "name" "string" "CSUI.particle.font.panel.Combine_alphabet_Regular"
-                "hitNormal" "vector3" "0 0 0"
-                "isProceduralEntity" "bool" "0"
-                "relayPlugData" "DmePlugList"
-                {
-                    "id" "elementid" "9735d42c-3d8b-43e4-891f-1a7f61a7b333"
-                    "names" "string_array" [ ]
-                    "dataTypes" "int_array" [ ]
-                    "plugTypes" "int_array" [ ]
-                    "descriptions" "string_array" [ ]
-                }
-                "connectionsData" "element_array" [ ]
-                "entity_properties" "EditGameClassProps"
-                {
-                    "id" "elementid" "e8edbf7b-6cea-4726-9200-3e552f2cf50b"
-                    "targetname" "string" "CSUI.particle.font.panel.Combine_alphabet_Regular"
-                    "classname" "string" "info_particle_system"
-                    "origin" "string" "0 0 16"
-                    "tint_cp" "string" "1"
-                    "start_active" "string" "0"
-                    "effect_name" "string" "particles/csui/fonts/Combine_alphabet_Regular.vpcf"
-                }
-                "origin" "vector3" "0 0 0"
-                "angles" "qangle" "0 0 0"
-                "scales" "vector3" "1 1 1"
-                "nodeID" "int" "0"
-                "referenceID" "uint64" "0x0"
-                "children" "element_array" [ ]
-                "editorOnly" "bool" "0"
-                "force_hidden" "bool" "0"
-                "transformLocked" "bool" "0"
-                "variableTargetKeys" "string_array" [ ]
-                "variableNames" "string_array" [ ]
-            },
-            "CMapEntity"
-            {
-                "id" "elementid" "9735d42c-3d8b-43e4-891f-1a7f61a7b333"
-                "name" "string" "CSUI.particle.font.panel.Combine_alphabet_Regular.template"
-                "hitNormal" "vector3" "0 0 0"
-                "isProceduralEntity" "bool" "0"
-                "relayPlugData" "DmePlugList"
-                {
-                    "id" "elementid" "62de8ca9-9025-4d37-a134-ecf97a76adc8"
-                    "names" "string_array" [ ]
-                    "dataTypes" "int_array" [ ]
-                    "plugTypes" "int_array" [ ]
-                    "descriptions" "string_array" [ ]
-                }
-                "connectionsData" "element_array" [ ]
-                "entity_properties" "EditGameClassProps"
-                {
-                    "id" "elementid" "c833a059-860a-4a8b-a016-55ed84d0d364"
-                    "origin" "string" "0 0 0"
-                    "targetname" "string" "CSUI.particle.font.panel.Combine_alphabet_Regular.template"
-                    "classname" "string" "point_template"
-                    "Template01" "string" "CSUI.particle.font.panel.Combine_alphabet_Regular"
-                }
-                "origin" "vector3" "0 0 0"
-                "angles" "qangle" "0 0 0"
-                "scales" "vector3" "1 1 1"
-                "nodeID" "int" "0"
-                "referenceID" "uint64" "0x0"
-                "children" "element_array" [ ]
-                "editorOnly" "bool" "0"
-                "force_hidden" "bool" "0"
-                "transformLocked" "bool" "0"
-                "variableTargetKeys" "string_array" [ ]
-                "variableNames" "string_array" [ ]
-            },
-            "CMapEntity"
-            {
-                "id" "elementid" "21cc804d-45c3-49ff-95e3-0f04fbc02a19"
-                "name" "string" "CSUI.particle.font.panel.Inconsolata_Regular"
-                "hitNormal" "vector3" "0 0 0"
-                "isProceduralEntity" "bool" "0"
-                "relayPlugData" "DmePlugList"
-                {
-                    "id" "elementid" "d3988074-7175-4a54-88d1-b7e699d83672"
-                    "names" "string_array" [ ]
-                    "dataTypes" "int_array" [ ]
-                    "plugTypes" "int_array" [ ]
-                    "descriptions" "string_array" [ ]
-                }
-                "connectionsData" "element_array" [ ]
-                "entity_properties" "EditGameClassProps"
-                {
-                    "id" "elementid" "cd4d4fcf-f14e-43f7-9dcb-e0ae91c36de1"
-                    "targetname" "string" "CSUI.particle.font.panel.Inconsolata_Regular"
-                    "classname" "string" "info_particle_system"
-                    "origin" "string" "16 0 16"
-                    "tint_cp" "string" "1"
-                    "start_active" "string" "0"
-                    "effect_name" "string" "particles/csui/fonts/Inconsolata_Regular.vpcf"
-                }
-                "origin" "vector3" "0 0 0"
-                "angles" "qangle" "0 0 0"
-                "scales" "vector3" "1 1 1"
-                "nodeID" "int" "0"
-                "referenceID" "uint64" "0x0"
-                "children" "element_array" [ ]
-                "editorOnly" "bool" "0"
-                "force_hidden" "bool" "0"
-                "transformLocked" "bool" "0"
-                "variableTargetKeys" "string_array" [ ]
-                "variableNames" "string_array" [ ]
-            },
-            "CMapEntity"
-            {
-                "id" "elementid" "d3988074-7175-4a54-88d1-b7e699d83672"
-                "name" "string" "CSUI.particle.font.panel.Inconsolata_Regular.template"
-                "hitNormal" "vector3" "0 0 0"
-                "isProceduralEntity" "bool" "0"
-                "relayPlugData" "DmePlugList"
-                {
-                    "id" "elementid" "24208332-fd2d-427e-b343-eb44de470f15"
-                    "names" "string_array" [ ]
-                    "dataTypes" "int_array" [ ]
-                    "plugTypes" "int_array" [ ]
-                    "descriptions" "string_array" [ ]
-                }
-                "connectionsData" "element_array" [ ]
-                "entity_properties" "EditGameClassProps"
-                {
-                    "id" "elementid" "2231ddbd-72d1-49b0-bf57-cd3069dfbbbf"
-                    "origin" "string" "16 0 0"
-                    "targetname" "string" "CSUI.particle.font.panel.Inconsolata_Regular.template"
-                    "classname" "string" "point_template"
-                    "Template01" "string" "CSUI.particle.font.panel.Inconsolata_Regular"
-                }
-                "origin" "vector3" "0 0 0"
-                "angles" "qangle" "0 0 0"
-                "scales" "vector3" "1 1 1"
-                "nodeID" "int" "0"
-                "referenceID" "uint64" "0x0"
-                "children" "element_array" [ ]
-                "editorOnly" "bool" "0"
-                "force_hidden" "bool" "0"
-                "transformLocked" "bool" "0"
-                "variableTargetKeys" "string_array" [ ]
-                "variableNames" "string_array" [ ]
-            },
-            "CMapEntity"
-            {
-                "id" "elementid" "375c4c4e-2f1e-457d-bb53-49f75a2aeff8"
+                "id" "elementid" "8fc310dd-9dcb-4434-8be8-dd34e2b247a1"
                 "name" "string" "CSUI.particle.font.panel.Roboto_Regular"
                 "hitNormal" "vector3" "0 0 0"
                 "isProceduralEntity" "bool" "0"
                 "relayPlugData" "DmePlugList"
                 {
-                    "id" "elementid" "0729c1bd-3d8b-4fc9-8c98-e6c6053a38fc"
+                    "id" "elementid" "5ce3b2b8-0cfd-4812-91df-8ba52e7df548"
                     "names" "string_array" [ ]
                     "dataTypes" "int_array" [ ]
                     "plugTypes" "int_array" [ ]
@@ -251,10 +107,10 @@
                 "connectionsData" "element_array" [ ]
                 "entity_properties" "EditGameClassProps"
                 {
-                    "id" "elementid" "10340106-3944-40c1-ab1a-09322bf7cb85"
+                    "id" "elementid" "d9eeaa75-cfec-41d9-8477-af59530c3109"
                     "targetname" "string" "CSUI.particle.font.panel.Roboto_Regular"
                     "classname" "string" "info_particle_system"
-                    "origin" "string" "32 0 16"
+                    "origin" "string" "0 0 16"
                     "tint_cp" "string" "1"
                     "start_active" "string" "0"
                     "effect_name" "string" "particles/csui/fonts/Roboto_Regular.vpcf"
@@ -273,13 +129,13 @@
             },
             "CMapEntity"
             {
-                "id" "elementid" "0729c1bd-3d8b-4fc9-8c98-e6c6053a38fc"
+                "id" "elementid" "5ce3b2b8-0cfd-4812-91df-8ba52e7df548"
                 "name" "string" "CSUI.particle.font.panel.Roboto_Regular.template"
                 "hitNormal" "vector3" "0 0 0"
                 "isProceduralEntity" "bool" "0"
                 "relayPlugData" "DmePlugList"
                 {
-                    "id" "elementid" "dd17f06c-2b00-48a0-adc9-2a50031a1d9e"
+                    "id" "elementid" "7445267e-23a6-4ea8-a7da-3fd1fc7bdbf4"
                     "names" "string_array" [ ]
                     "dataTypes" "int_array" [ ]
                     "plugTypes" "int_array" [ ]
@@ -288,8 +144,8 @@
                 "connectionsData" "element_array" [ ]
                 "entity_properties" "EditGameClassProps"
                 {
-                    "id" "elementid" "40bde0e5-bbd9-418f-8efc-feba7cd5930d"
-                    "origin" "string" "32 0 0"
+                    "id" "elementid" "10969144-0c5d-40b2-bab2-68c58c37b45a"
+                    "origin" "string" "0 0 0"
                     "targetname" "string" "CSUI.particle.font.panel.Roboto_Regular.template"
                     "classname" "string" "point_template"
                     "Template01" "string" "CSUI.particle.font.panel.Roboto_Regular"

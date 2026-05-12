@@ -36,7 +36,7 @@ _FONT_METRICS_
 ";
 
     public const string FONT_METRIC =
-@"    { pixelW:_WIDTH_, pixelH:_HEIGHT_, bearingX:_BEARINGX_, bearingY:_BEARINGY_, advance:_ADVANCE_ }, // '_CHAR_'";
+@"    { pixelW:_WIDTH_, pixelH:_HEIGHT_, advance:_ADVANCE_ }, // '_CHAR_'";
 
     public const string VTEX =
 @"<!-- dmx encoding keyvalues2_noids 1 format vtex 1 -->

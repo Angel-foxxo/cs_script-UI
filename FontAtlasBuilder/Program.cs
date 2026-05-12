@@ -15,15 +15,13 @@ static class FontAtlasGenerator
     // all paths are relative to addon root
     const string FontFilesPath = "fonts";
     const string GlyphOutputPath = "materials/csui/fonts";
-    const string ScriptOutputPath = "src/csui/fonts";
+    const string ScriptOutputPath = "src/csui";
     const string FontParticlePath = "particles/csui/fonts";
 
     record GlyphInfo(
         char Char,
         int Width,
         int Height,
-        float BearingX,
-        float BearingY,
         float Advance
     );
 
@@ -53,11 +51,14 @@ static class FontAtlasGenerator
         string scriptOutputPath = Path.Combine(addonPath, ScriptOutputPath);
         string fontParticlePath = Path.Combine(addonPath, FontParticlePath);
 
+        // delete old font files in case someone removed a font from the fonts folder
+        EmptyFolder(fontParticlePath);
+        EmptyFolder(glyphOutputPath);
+
         Console.WriteLine($"\nGlyphs Output Path: `{GlyphOutputPath}`");
         Console.WriteLine($"Typescript Definition File Output Path: `{ScriptOutputPath}`");
         Console.WriteLine($"Font Particles Output Path: `{FontParticlePath}`");
         Console.WriteLine($"\nFont Bake Size: {FontPixelSize}px");
-
 
         var fontDefinitions = Templates.FONT_DEFINITIONS
             .Replace("_HEADER_TEXT_", Templates.GENERATED_FILE_HEADER);
@@ -131,7 +132,7 @@ static class FontAtlasGenerator
 
         File.WriteAllText(Path.Combine(addonPath, $"maps/prefabs/csui/fonts.vmap"), vmap);
 
-        Console.WriteLine("\nFinished writing font files.\n");
+        Console.WriteLine("\nFinished writing font files.\nRecompile your map (entity only compile will do) in order to use any new fonts added.\n");
     }
 
     static List<GlyphInfo> GetGlyphInfo(Font font)
@@ -160,8 +161,6 @@ static class FontAtlasGenerator
             sfAdv.FormatFlags |= StringFormatFlags.MeasureTrailingSpaces;
             var advSize = g.MeasureString(s, font!, new PointF(0, 0), sfAdv);
 
-            float bearingX = bounds.Left;
-            float bearingY = -bounds.Top;        // up = positive
             float glyphW = bounds.Width ;
             float glyphH = bounds.Height;
             float advance = advSize.Width;
@@ -173,7 +172,7 @@ static class FontAtlasGenerator
             int cellW = (int)Math.Ceiling(glyphW);
             int cellH = (int)Math.Ceiling(glyphH);
 
-            results.Add(new GlyphInfo(ch, cellW, cellH, bearingX, bearingY, advance));
+            results.Add(new GlyphInfo(ch, cellW, cellH, advance));
         }
 
         return results;
@@ -186,12 +185,7 @@ static class FontAtlasGenerator
         string dir = Path.Combine(outputPath, fontName);
         Directory.CreateDirectory(dir);
 
-        // Shared baseline Y: the largest bearingY places the tallest ascender; all
-        // other glyphs are drawn at the same Y so their baselines line up.
-        float baselineY = 0f;
-        foreach (var glyph in glyphs)
-            baselineY = Math.Max(baselineY, glyph.BearingY);
-
+       
         var sf = StringFormat.GenericTypographic;
         sf.FormatFlags |= StringFormatFlags.MeasureTrailingSpaces;
 
@@ -206,12 +200,7 @@ static class FontAtlasGenerator
                 g.TextRenderingHint = TextRenderingHint.AntiAlias;
                 g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
 
-                // drawY: baseline minus this glyph's own ascent so the glyph top
-                // lands at (baseline - bearingY) relative to the shared baseline row.
-                float drawX = glyph.BearingX >= 0 ? 0f : -glyph.BearingX;
-                float drawY = baselineY - glyph.BearingY;
-
-                g.DrawString(glyph.Char.ToString(), font!, Brushes.White, drawX, drawY, sf);
+                g.DrawString(glyph.Char.ToString(), font!, Brushes.White, 0, 0, sf);
             }
             string fileName = $"{(int)glyph.Char}.png";
             string filePath = Path.Combine(dir, fileName);
@@ -246,19 +235,15 @@ static class FontAtlasGenerator
 
             var width = PrintFloatExactSize(glyph.Width / FontPixelSize);
             var height = PrintFloatExactSize(glyph.Height / FontPixelSize);
-            var bearingx = PrintFloatExactSize(glyph.BearingX / FontPixelSize);
-            var bearingy = PrintFloatExactSize(glyph.BearingY / FontPixelSize);
             var advance = PrintFloatExactSize(glyph.Advance / FontPixelSize);
 
             fontMetrics += Templates.FONT_METRIC
                 .Replace("_WIDTH_", width)
                 .Replace("_HEIGHT_", height)
-                .Replace("_BEARINGX_", bearingx)
-                .Replace("_BEARINGY_", bearingy)
                 .Replace("_ADVANCE_", advance)
                 .Replace("_CHAR_", EscapeTsKey(glyph.Char)) + "\n";
 
-            Console.WriteLine($"Writing Glyph `{glyph.Char}`: Width: `{width}`, Height: `{height}`, BearingX: `{bearingx}`, BearingY: `{bearingy}`, Advance: `{advance}`.");
+            Console.WriteLine($"Writing Glyph `{glyph.Char}`: Width: `{width}`, Height: `{height}`, Advance: `{advance}`.");
         }
 
         Console.WriteLine($"\nLine Height `{PrintFloatExactSize(lineHeight)}`");
@@ -282,7 +267,21 @@ static class FontAtlasGenerator
         _ => ch.ToString(),
     };
 
-    private static string MakeValidFileName(string name)
+    static void EmptyFolder(string path)
+    {
+        DirectoryInfo di = new DirectoryInfo(path);
+
+        foreach (FileInfo file in di.GetFiles())
+        {
+            file.Delete();
+        }
+        foreach (DirectoryInfo dir in di.GetDirectories())
+        {
+            dir.Delete(true);
+        }
+    }
+
+    static string MakeValidFileName(string name)
     {
         string invalidChars = System.Text.RegularExpressions.Regex.Escape(new string(Path.GetInvalidFileNameChars())) + " ";
         string invalidRegStr = string.Format(@"([{0}]*\.+$)|([{0}]+)", invalidChars);

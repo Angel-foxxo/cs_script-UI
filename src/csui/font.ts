@@ -5,10 +5,6 @@ export interface GlyphMetrics {
     pixelW: number;
     /** Glyph pixel height at baked size */
     pixelH: number;
-    /** X offset: pen origin quad left  (px, right = +) */
-    bearingX: number;
-    /** Y offset: baseline   quad top   (px, up    = +) */
-    bearingY: number;
     /** Pen advance after this glyph (px) */
     advance: number;
 }
@@ -43,27 +39,5 @@ export class Font
     public GetGlyph(ch: string): GlyphMetrics
     {
         return this.Glyphs[GetGlyphIndex(ch)] ?? this.Glyphs[GetGlyphIndex("?")];
-    }
-
-    /**
-     * Assemble text string into an array of local-space quad positions.
-     */
-    public AssembleText(text: string, scale = 1): { char: string; x: number; y: number; w: number; h: number }[]
-    {
-        const quads = [];
-        let cx = 0;
-        for (const ch of text)
-        {
-            const g = this.GetGlyph(ch);
-            quads.push({
-                char: ch,
-                x:  cx + g.bearingX * scale,
-                y:  g.bearingY * scale, // bearingY up subtract in Y-down
-                w:  g.pixelW * scale,
-                h:  g.pixelH * scale,
-            });
-            cx += g.advance * scale;
-        }
-        return quads;
     }
 }
