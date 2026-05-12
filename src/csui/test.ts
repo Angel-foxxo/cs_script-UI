@@ -92,7 +92,7 @@ function SpawnUI()
             Padding: 4,
         };
 
-        const textPanel = new TextUIPanel(menuItemPanel, Fonts.Combine_alphabet_Regular, menuItems[i]);
+        const textPanel = new TextUIPanel(menuItemPanel, Fonts.Roboto_Regular, menuItems[i]);
         textPanel.Layout = {
             Width: Size.Grow,
             Height: 1,

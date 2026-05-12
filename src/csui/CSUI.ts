@@ -4,7 +4,7 @@
 import { Euler, Vec3 } from "@s2ze/math";
 import { BaseModelEntity, Color, CSInputs, CSPlayerPawn, Entity, Instance, PointTemplate } from "cs_script/point_script";
 import { Font } from "./fonts/font";
-import { Fonts, FontsMap } from "./fonts/font_definitions";
+import { Fonts, FontsMap, GetGlyphIndex } from "./fonts/font_definitions";
 
 const ANIM_EPS = 0.001;
 const PANEL_Z_INCREMENT: number = 0.1;
@@ -946,8 +946,7 @@ export class UIPanel extends BaseUIPanel
 
     protected Cleanup(): void 
     {
-        Instance.EntFireAtTarget({ target: this.Visual, input: "DestroyImmediately" });
-        Instance.EntFireAtTarget({ target: this.Visual, input: "kill", delay: 0.1 });
+        Instance.EntFireAtTarget({ target: this.Visual, input: "kill" });
     }
 }
 
@@ -968,7 +967,9 @@ export class TextUIPanel extends BaseUIPanel
     {
         this._Text = text;
 
-        for (const char of this._Text) 
+        this.CleanupOldText();
+
+        for (let i = 0; i < this._Text.length; i++) 
         {
             const particleTextPanel = this.ParticleTextPanelTemplate.ForceSpawn();
 
@@ -983,6 +984,16 @@ export class TextUIPanel extends BaseUIPanel
 
             Instance.EntFireAtTarget({ target: textPanel, input: "start" });
         }
+    }
+
+    private CleanupOldText()
+    {
+        for (const textEnt of this.TextEnts) 
+        {
+            Instance.EntFireAtTarget({ target: textEnt, input: "kill" });
+        }
+
+        this.TextEnts.length = 0;
     }
 
     constructor(parent: BaseUIPanel | UI, font: Fonts, text: string)
@@ -1010,7 +1021,7 @@ export class TextUIPanel extends BaseUIPanel
 
             const alignmentOffset = (textObject.w) / 2;
 
-            const index = (this.Font.GetGlyphIndex(textObject.char) ?? 72) - 0.01;
+            const index = (GetGlyphIndex(textObject.char) ?? 72) - 0.01;
 
             Instance.EntFireAtTarget({ target: this.TextEnts[i], input: "SetControlPoint", value: `2: ${this.UI.Brightness} ${this.Color.a} ${index}` });
             Instance.EntFireAtTarget({ target: this.TextEnts[i], input: "SetControlPoint", value: `3: ${textObject.h} ${textObject.w} 0` });
@@ -1024,7 +1035,7 @@ export class TextUIPanel extends BaseUIPanel
 
     protected Cleanup(): void 
     {
-        
+        this.CleanupOldText();
     }
 }
 /////// UTILS ///////

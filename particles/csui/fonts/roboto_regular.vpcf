@@ -1595,6 +1595,9 @@
 			}
 			m_nOutputField = 38
 		},
+		{
+			_class = "C_OP_EndCapTimedDecay"
+		},
 	]
 	m_Renderers = 
 	[

@@ -1,4 +1,4 @@
-import { CharToGlyphs } from "./font_definitions";
+import { GetGlyphIndex } from "./font_definitions";
 
 export interface GlyphMetrics {
     /** Glyph pixel width  at baked size */
@@ -37,20 +37,12 @@ export class Font
     }
 
     /** 
-     * Returns the index of the char's glpyh in the Glyphs array
-     */
-    public GetGlyphIndex(ch: string): number
-    {
-        return CharToGlyphs.get(ch.charCodeAt(0)) ?? 0;
-    }
-
-    /** 
      * Looks up metrics by char, falling back to '?' if char isn't valid  
      * Valid chars + spaces: ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!\"@#$%^&*}{_+-=,./\\?:;<>][()`'
      */
     public GetGlyph(ch: string): GlyphMetrics
     {
-        return this.Glyphs[this.GetGlyphIndex(ch)] ?? this.Glyphs[this.GetGlyphIndex("?")];
+        return this.Glyphs[GetGlyphIndex(ch)] ?? this.Glyphs[GetGlyphIndex("?")];
     }
 
     /**

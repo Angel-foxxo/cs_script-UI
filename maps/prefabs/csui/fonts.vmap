@@ -92,13 +92,13 @@
             
             "CMapEntity"
             {
-                "id" "elementid" "0c61e083-79c8-4f73-8b33-834505f27c90"
+                "id" "elementid" "58b18247-aeff-4bd1-9081-8dacc6102a14"
                 "name" "string" "CSUI.particle.font.panel.Combine_alphabet_Regular"
                 "hitNormal" "vector3" "0 0 0"
                 "isProceduralEntity" "bool" "0"
                 "relayPlugData" "DmePlugList"
                 {
-                    "id" "elementid" "2dc3b200-3cde-4636-bf02-0ec49dc0f682"
+                    "id" "elementid" "9735d42c-3d8b-43e4-891f-1a7f61a7b333"
                     "names" "string_array" [ ]
                     "dataTypes" "int_array" [ ]
                     "plugTypes" "int_array" [ ]
@@ -107,7 +107,7 @@
                 "connectionsData" "element_array" [ ]
                 "entity_properties" "EditGameClassProps"
                 {
-                    "id" "elementid" "95165a23-2acf-484a-9abd-3bba8df217d0"
+                    "id" "elementid" "e8edbf7b-6cea-4726-9200-3e552f2cf50b"
                     "targetname" "string" "CSUI.particle.font.panel.Combine_alphabet_Regular"
                     "classname" "string" "info_particle_system"
                     "origin" "string" "0 0 16"
@@ -129,13 +129,13 @@
             },
             "CMapEntity"
             {
-                "id" "elementid" "2dc3b200-3cde-4636-bf02-0ec49dc0f682"
+                "id" "elementid" "9735d42c-3d8b-43e4-891f-1a7f61a7b333"
                 "name" "string" "CSUI.particle.font.panel.Combine_alphabet_Regular.template"
                 "hitNormal" "vector3" "0 0 0"
                 "isProceduralEntity" "bool" "0"
                 "relayPlugData" "DmePlugList"
                 {
-                    "id" "elementid" "be2ada0f-8909-48d6-8083-60cb46bc7d5f"
+                    "id" "elementid" "62de8ca9-9025-4d37-a134-ecf97a76adc8"
                     "names" "string_array" [ ]
                     "dataTypes" "int_array" [ ]
                     "plugTypes" "int_array" [ ]
@@ -144,7 +144,7 @@
                 "connectionsData" "element_array" [ ]
                 "entity_properties" "EditGameClassProps"
                 {
-                    "id" "elementid" "5d5552b5-2eb3-4fe8-ac5f-bf8c2f896e63"
+                    "id" "elementid" "c833a059-860a-4a8b-a016-55ed84d0d364"
                     "origin" "string" "0 0 0"
                     "targetname" "string" "CSUI.particle.font.panel.Combine_alphabet_Regular.template"
                     "classname" "string" "point_template"
@@ -164,13 +164,13 @@
             },
             "CMapEntity"
             {
-                "id" "elementid" "4640fc3d-966f-4556-baf8-21ecfe061070"
+                "id" "elementid" "21cc804d-45c3-49ff-95e3-0f04fbc02a19"
                 "name" "string" "CSUI.particle.font.panel.Inconsolata_Regular"
                 "hitNormal" "vector3" "0 0 0"
                 "isProceduralEntity" "bool" "0"
                 "relayPlugData" "DmePlugList"
                 {
-                    "id" "elementid" "f79d1a90-0f38-4703-b983-bf623a5bb133"
+                    "id" "elementid" "d3988074-7175-4a54-88d1-b7e699d83672"
                     "names" "string_array" [ ]
                     "dataTypes" "int_array" [ ]
                     "plugTypes" "int_array" [ ]
@@ -179,7 +179,7 @@
                 "connectionsData" "element_array" [ ]
                 "entity_properties" "EditGameClassProps"
                 {
-                    "id" "elementid" "3b51439b-0e3d-4df7-944b-fc40c5fc12ad"
+                    "id" "elementid" "cd4d4fcf-f14e-43f7-9dcb-e0ae91c36de1"
                     "targetname" "string" "CSUI.particle.font.panel.Inconsolata_Regular"
                     "classname" "string" "info_particle_system"
                     "origin" "string" "16 0 16"
@@ -201,13 +201,13 @@
             },
             "CMapEntity"
             {
-                "id" "elementid" "f79d1a90-0f38-4703-b983-bf623a5bb133"
+                "id" "elementid" "d3988074-7175-4a54-88d1-b7e699d83672"
                 "name" "string" "CSUI.particle.font.panel.Inconsolata_Regular.template"
                 "hitNormal" "vector3" "0 0 0"
                 "isProceduralEntity" "bool" "0"
                 "relayPlugData" "DmePlugList"
                 {
-                    "id" "elementid" "db001a1e-6844-4bea-871c-98862c5d8e06"
+                    "id" "elementid" "24208332-fd2d-427e-b343-eb44de470f15"
                     "names" "string_array" [ ]
                     "dataTypes" "int_array" [ ]
                     "plugTypes" "int_array" [ ]
@@ -216,7 +216,7 @@
                 "connectionsData" "element_array" [ ]
                 "entity_properties" "EditGameClassProps"
                 {
-                    "id" "elementid" "af9aadb1-a5d6-4287-8afb-373961393de7"
+                    "id" "elementid" "2231ddbd-72d1-49b0-bf57-cd3069dfbbbf"
                     "origin" "string" "16 0 0"
                     "targetname" "string" "CSUI.particle.font.panel.Inconsolata_Regular.template"
                     "classname" "string" "point_template"
@@ -236,13 +236,13 @@
             },
             "CMapEntity"
             {
-                "id" "elementid" "da5f7079-742d-4ebb-90f1-c9245139e8d9"
+                "id" "elementid" "375c4c4e-2f1e-457d-bb53-49f75a2aeff8"
                 "name" "string" "CSUI.particle.font.panel.Roboto_Regular"
                 "hitNormal" "vector3" "0 0 0"
                 "isProceduralEntity" "bool" "0"
                 "relayPlugData" "DmePlugList"
                 {
-                    "id" "elementid" "75337648-09ee-44a8-8451-047222b853be"
+                    "id" "elementid" "0729c1bd-3d8b-4fc9-8c98-e6c6053a38fc"
                     "names" "string_array" [ ]
                     "dataTypes" "int_array" [ ]
                     "plugTypes" "int_array" [ ]
@@ -251,7 +251,7 @@
                 "connectionsData" "element_array" [ ]
                 "entity_properties" "EditGameClassProps"
                 {
-                    "id" "elementid" "df4d290d-afef-4afa-a6b0-590701910315"
+                    "id" "elementid" "10340106-3944-40c1-ab1a-09322bf7cb85"
                     "targetname" "string" "CSUI.particle.font.panel.Roboto_Regular"
                     "classname" "string" "info_particle_system"
                     "origin" "string" "32 0 16"
@@ -273,13 +273,13 @@
             },
             "CMapEntity"
             {
-                "id" "elementid" "75337648-09ee-44a8-8451-047222b853be"
+                "id" "elementid" "0729c1bd-3d8b-4fc9-8c98-e6c6053a38fc"
                 "name" "string" "CSUI.particle.font.panel.Roboto_Regular.template"
                 "hitNormal" "vector3" "0 0 0"
                 "isProceduralEntity" "bool" "0"
                 "relayPlugData" "DmePlugList"
                 {
-                    "id" "elementid" "12d27bae-63cf-4658-ac45-1aba472fb94e"
+                    "id" "elementid" "dd17f06c-2b00-48a0-adc9-2a50031a1d9e"
                     "names" "string_array" [ ]
                     "dataTypes" "int_array" [ ]
                     "plugTypes" "int_array" [ ]
@@ -288,7 +288,7 @@
                 "connectionsData" "element_array" [ ]
                 "entity_properties" "EditGameClassProps"
                 {
-                    "id" "elementid" "bfe7d3be-0d9d-4724-8f91-bc3539d9a7cf"
+                    "id" "elementid" "40bde0e5-bbd9-418f-8efc-feba7cd5930d"
                     "origin" "string" "32 0 0"
                     "targetname" "string" "CSUI.particle.font.panel.Roboto_Regular.template"
                     "classname" "string" "point_template"

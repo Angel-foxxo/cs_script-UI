@@ -14,6 +14,14 @@ export const FontsMap: Map<Fonts, Font> = new Map<Fonts, Font>();
 
 export const CharToGlyphs: Map<number, number> = new Map<number, number>();
 
+/** 
+ * Returns the index of the char's glpyh in the Glyphs array
+ */
+export function GetGlyphIndex(ch: string): number
+{
+    return CharToGlyphs.get(ch.charCodeAt(0)) ?? 72;
+}
+
 export const Combine_alphabet_Regular: Font = new Font("Combine_alphabet_Regular", 1.09, [
     { pixelW:0.5, pixelH:1, bearingX:0, bearingY:-0, advance:0.5 }, // ' '
     { pixelW:1.085938, pixelH:1, bearingX:0, bearingY:-0, advance:1.083984 }, // 'A'
@@ -360,4 +368,44 @@ CharToGlyphs.set(119, 49);
 CharToGlyphs.set(120, 50);
 CharToGlyphs.set(121, 51);
 CharToGlyphs.set(122, 52);
+CharToGlyphs.set(33, 53);
+CharToGlyphs.set(34, 54);
+CharToGlyphs.set(64, 55);
+CharToGlyphs.set(35, 56);
+CharToGlyphs.set(36, 57);
+CharToGlyphs.set(37, 58);
+CharToGlyphs.set(94, 59);
+CharToGlyphs.set(38, 60);
+CharToGlyphs.set(42, 61);
+CharToGlyphs.set(125, 62);
+CharToGlyphs.set(123, 63);
+CharToGlyphs.set(95, 64);
+CharToGlyphs.set(43, 65);
+CharToGlyphs.set(45, 66);
+CharToGlyphs.set(61, 67);
+CharToGlyphs.set(44, 68);
+CharToGlyphs.set(46, 69);
+CharToGlyphs.set(47, 70);
+CharToGlyphs.set(92, 71);
+CharToGlyphs.set(63, 72);
+CharToGlyphs.set(58, 73);
+CharToGlyphs.set(59, 74);
+CharToGlyphs.set(60, 75);
+CharToGlyphs.set(62, 76);
+CharToGlyphs.set(93, 77);
+CharToGlyphs.set(91, 78);
+CharToGlyphs.set(40, 79);
+CharToGlyphs.set(41, 80);
+CharToGlyphs.set(96, 81);
+CharToGlyphs.set(39, 82);
+CharToGlyphs.set(49, 83);
+CharToGlyphs.set(50, 84);
+CharToGlyphs.set(51, 85);
+CharToGlyphs.set(52, 86);
+CharToGlyphs.set(53, 87);
+CharToGlyphs.set(54, 88);
+CharToGlyphs.set(55, 89);
+CharToGlyphs.set(56, 90);
+CharToGlyphs.set(57, 91);
+CharToGlyphs.set(48, 92);
 

@@ -107,7 +107,7 @@ static class FontAtlasGenerator
             }
         }
 
-        for (int i = 0; i < Charset[i]; i++)
+        for (int i = 0; i < Charset.Length; i++)
         {
             var _char = Charset[i];
 

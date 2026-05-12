@@ -16,6 +16,14 @@ export const FontsMap: Map<Fonts, Font> = new Map<Fonts, Font>();
 
 export const CharToGlyphs: Map<number, number> = new Map<number, number>();
 
+/** 
+ * Returns the index of the char's glpyh in the Glyphs array
+ */
+export function GetGlyphIndex(ch: string): number
+{
+    return CharToGlyphs.get(ch.charCodeAt(0)) ?? 72;
+}
+
 _FONT_CLASSES_
 _FONT_MAP_ENTRIES_
 _CHAR_TO_GLYPHS_
@@ -1675,6 +1683,9 @@ _FONT_METRICS_
 				}
 			}
 			m_nOutputField = 38
+		},
+		{
+			_class = ""C_OP_EndCapTimedDecay""
 		},
 	]
 	m_Renderers = 
