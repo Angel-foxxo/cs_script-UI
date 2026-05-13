@@ -1,5 +1,7 @@
 sequence 0
 frame blank.png 1
+frame 65533.png 1
+frame blank.png 1
 frame 32.png 1
 frame blank.png 1
 frame 65.png 1

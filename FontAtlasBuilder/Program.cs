@@ -9,8 +9,11 @@ using System.Text;
 //
 static class FontAtlasGenerator
 {
-    const string Charset =
-        " ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!\"@#$%^&*}{_+-=,./\\?:;<>][()`'1234567890";
+    const string BaseChars =
+        "� ";
+
+    const string DefaultChars =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!\"@#$%^&*}{_+-=,./\\?:;<>][()`'1234567890";
 
     // all paths are relative to addon root
     const string FontFilesPath = "fonts";
@@ -31,6 +34,7 @@ static class FontAtlasGenerator
     {
         Console.WriteLine($"\n======================== BUILDING FONTS ========================\n");
 
+        string charset = GetCharset();
         string addonPath = GetAddonContentFolder().FullName;
 
         Console.WriteLine($"Addon Path: {addonPath}\n");
@@ -45,7 +49,7 @@ static class FontAtlasGenerator
             Console.WriteLine($" - `{fontCollection.Families[i].Name}`");
         }
 
-        Console.WriteLine($"\nAtlas Charset: `{Charset}`");
+        Console.WriteLine($"\nAtlas Charset: `{charset}`");
 
         string glyphOutputPath = Path.Combine(addonPath, GlyphOutputPath);
         string scriptOutputPath = Path.Combine(addonPath, ScriptOutputPath);
@@ -108,9 +112,9 @@ static class FontAtlasGenerator
             }
         }
 
-        for (int i = 0; i < Charset.Length; i++)
+        for (int i = 0; i < charset.Length; i++)
         {
-            var _char = Charset[i];
+            var _char = charset[i];
 
             charToGlyph += $"CharToGlyphs.set({(int)_char}, {i});\n";
         }
@@ -147,7 +151,7 @@ static class FontAtlasGenerator
         var sfMeasure = StringFormat.GenericTypographic;
         sfMeasure.FormatFlags |= StringFormatFlags.MeasureTrailingSpaces;
 
-        foreach (char ch in Charset)
+        foreach (char ch in GetCharset())
         {
             string s = ch.ToString();
 
@@ -261,6 +265,8 @@ static class FontAtlasGenerator
     }
 
     static string FontName(Font font) => MakeValidFileName($"{font.Name}_{font.Style}");
+
+    static string GetCharset() => BaseChars + DefaultChars;
 
     static string PrintFloatExactSize(float v) => v.ToString("0.######", CultureInfo.InvariantCulture);
 
