@@ -1,5 +1,5 @@
 import { Color, Instance } from "cs_script/point_script";
-import { AlignX, AlignY, Flow, InvisUIPanel, Size, TextUIPanel, UI, UIPanel, UISetDebug } from "./CSUI";
+import { AlignX, AlignY, Flow, InvisUIPanel, Shape, Size, TextUIPanel, UI, UIPanel, UISetDebug } from "./CSUI";
 import { Euler, Vec3 } from "@s2ze/math";
 import { Fonts } from "./font_definitions";
 
@@ -10,7 +10,7 @@ Instance.ServerCommand("mp_force_pick_time 0");
 const TestUITarget = Instance.FindEntityByName("testui.target")!;
 let TestUI: UI | undefined = undefined;
 
-UISetDebug(true);
+UISetDebug(false);
 
 interface ThemeColors
 {
@@ -107,7 +107,7 @@ function SpawnUI()
             Height: Size.Grow,
         };
 
-        const iconPanel = new UIPanel(menuItemPanel);
+        const iconPanel = new UIPanel(menuItemPanel, Shape.Rect);
         iconPanel.Color = CurrentTheme.Accent;
         iconPanel.Layout = {
             Width: 15,

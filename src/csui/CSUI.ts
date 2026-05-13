@@ -43,6 +43,12 @@ export enum AlignY
     Bottom,
 }
 
+export enum Shape
+{
+    Rect,
+    Elipse,
+}
+
 export enum Size
 {
     Fit = "Fit",
@@ -965,11 +971,27 @@ export class UIPanel extends BaseUIPanel
         return this._Visual;
     }
 
-    constructor(parent: BaseUIPanel | UI)
+    constructor(parent: BaseUIPanel | UI, shape: Shape = Shape.Rect)
     {
         super(parent);
+
+        let particleTemplateName = "";
+
+        switch (shape) 
+        {
+            case Shape.Rect:
+                particleTemplateName = "*csui.particle.panel.template";
+                break;
+
+            case Shape.Elipse:
+                particleTemplateName = "*csui.particle.panel.circle.template";
+                break;
+
+            default:
+                break;
+        }
         
-        const particlePanelTemplate = Instance.FindEntityByName("*csui.particle.panel.template") as PointTemplate;
+        const particlePanelTemplate = Instance.FindEntityByName(particleTemplateName) as PointTemplate;
         if (particlePanelTemplate === undefined || !particlePanelTemplate.IsValid())
         {
             Log("Failed to find particle panel template");
