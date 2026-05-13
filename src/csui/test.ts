@@ -1,5 +1,5 @@
 import { Color, Instance } from "cs_script/point_script";
-import { AlignX, AlignY, Flow, Size, TextUIPanel, UI, UIPanel, UISetDebug } from "./CSUI";
+import { AlignX, AlignY, Flow, InvisUIPanel, Size, TextUIPanel, UI, UIPanel, UISetDebug } from "./CSUI";
 import { Euler, Vec3 } from "@s2ze/math";
 import { Fonts } from "./font_definitions";
 
@@ -52,7 +52,7 @@ const CurrentTheme: ThemeColors = DarkTheme;
 
 function SpawnUI()
 {
-    const menuItems = ["CMBN", "SCAN IN PROGRESS", "THE QUICK BROWN FOX \nJUMPS OVER THE LAZY DOG", "Lorem          ipsum dolor \n      sit amet, consectetuer", "!\"@#$%^&*}{_+-=,./\\?:;<>][()`'", "1234567890"];
+    const menuItems = ["CMBN", "SCAN IN PROGRESS", "THE QUICK BROWN FOX JUMPS OVER THE \nLAZY DOG", "Lorem          ipsum dolor \n      sit amet, consectetuer", "!\"@#$%^&*}{_+-=,./\\?:;<>][()`'", "1234567890"];
     const menuColors = [
         { r: 80, g: 212, b: 85, a: 255 },
         { r: 205, g: 212, b: 80, a: 255 },
@@ -86,20 +86,33 @@ function SpawnUI()
         menuItemPanel.Color = CurrentTheme.AppSoft;
         menuItemPanel.Layout = {
             Width: Size.Grow,
-            Height: 20,
+            Height: Size.Fit,
             AlignX: AlignX.Center,
             AlignY: AlignY.Center,
-            Padding: 0,
+            Flow: Flow.LeftRight,
+            Padding: 2,
         };
 
         const textPanel = new TextUIPanel(menuItemPanel, Fonts.Roboto_Regular, menuItems[i]);
-        textPanel.Layout = {
-            Width: 10,
+        textPanel.Layout.Scale = 4;
+        textPanel.Layout.Height = Size.Fit;
+        textPanel.Layout.Width = Size.Fit;
+        textPanel.Layout.AlignX = AlignX.Left;
+        textPanel.Color = menuColors[i];
+
+        const gapPanel = new InvisUIPanel(menuItemPanel);
+        gapPanel.Color = CurrentTheme.AppSoft;
+        gapPanel.Layout = {
+            Width: Size.Grow,
             Height: Size.Grow,
-            Scale: 3,
         };
 
-        textPanel.Color = menuColors[i];
+        const iconPanel = new UIPanel(menuItemPanel);
+        iconPanel.Color = CurrentTheme.Accent;
+        iconPanel.Layout = {
+            Width: 15,
+            Height: 15,
+        };
     }
 }
 

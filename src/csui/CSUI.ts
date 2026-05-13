@@ -362,6 +362,14 @@ export abstract class BaseUIPanel
     protected abstract Render(worldTransforms: Transforms): void;
     protected abstract Cleanup(): void;
 
+    // for subclasses that have intrinsic content size like text, called during MeasurePanel after children have been measured but before
+    // the panel's own Size.Fit dimensions are resolved
+    // return the natural { width, height } of the content at scale = 1, return undefined to use the normal child based measurement
+    protected MeasureContent(): { width: number; height: number } | undefined
+    {
+        return undefined;
+    }
+
     public Think(parentWorldTransforms?: Transforms): void
     {
         
@@ -518,6 +526,50 @@ export abstract class BaseUIPanel
 
         const axisHelper = this.GetAxisHelper();
         const gap = this.Layout.ChildGap ?? 0;
+
+        // check if this panel has intrinsic content (like text) that should drive its Size.Fit dimensions instead of child based measurement
+        const intrinsic = this.MeasureContent();
+
+        if (intrinsic !== undefined)
+        {
+            // intrinsic content panels behave like leaf nodes, children dont contribute to sizing
+            const scale = this.Layout.Scale ?? 1;
+
+            if (axisHelper.alongSizeType === Size.Fit || axisHelper.alongSizeType === Size.Grow)
+            {
+                // Grow is resolved later in DistributeGrow; for Fit we use intrinsic width.
+                if (axisHelper.alongSizeType === Size.Fit)
+                {
+                    axisHelper.setAlong((axisHelper.alongPaddingStart * 2 + intrinsic.width) * scale);
+                }
+                else
+                {
+                    axisHelper.setAlong(0); // will be filled in by DistributeGrow
+                }
+            }
+            else
+            {
+                axisHelper.setAlong((axisHelper.alongSizeType) * scale);
+            }
+
+            if (axisHelper.acrossSizeType === Size.Fit || axisHelper.acrossSizeType === Size.Grow)
+            {
+                if (axisHelper.acrossSizeType === Size.Fit)
+                {
+                    axisHelper.setAcross((axisHelper.acrossPaddingStart * 2 + intrinsic.height) * scale);
+                }
+                else
+                {
+                    axisHelper.setAcross(0); // will be filled in by DistributeGrow
+                }
+            }
+            else
+            {
+                axisHelper.setAcross((axisHelper.acrossSizeType) * scale);
+            }
+
+            return;
+        }
 
         // total child gap is related to the fence post problem, where total amount of child gap is the amount of children - 1
         // we can begin with this because it wont change based on anything but child count, which we already know
@@ -1003,6 +1055,10 @@ export class TextUIPanel extends BaseUIPanel
     {
         super(parent);
 
+        // text panels size themselves to fit their content by default
+        this.Layout.Width = Size.Fit;
+        this.Layout.Height = Size.Fit;
+
         this.Font = FontsMap.get(font)!;
      
         this.ParticleTextPanelTemplate = Instance.FindEntityByName(`*CSUI.particle.font.panel.${this.Font.FontName}.template`) as PointTemplate;
@@ -1012,6 +1068,32 @@ export class TextUIPanel extends BaseUIPanel
         }
         
         this.Text = text;
+    }
+
+    // returns the natural size of this text so that parent containers can account for the text size when computing their own sizing
+    // if the panel has a fixed Width set, text will be wrapped and the height will reflect the wrapped line count
+    // If Width is Size.Fit, the text is treated as a single unwrapped line
+    protected override MeasureContent(): { width: number; height: number }
+    {
+        const lineHeight = this.Font.FontLineHeight;
+
+        // fixed width
+        if (this.Layout.Width !== Size.Fit && this.Layout.Width !== Size.Grow)
+        {
+            const rawWidth = this.Layout.Width;
+            const wrappedText = WrapText(this._Text, rawWidth, this.Font);
+            const lineCount = (wrappedText.match(/\n/g)?.length ?? 0) + 1;
+            return { width: rawWidth, height: lineHeight * lineCount };
+        }
+
+        // no width constraint, measure the longest line of the raw text, respecting new lines
+        const rawLines = this._Text.split("\n");
+        let maxLineWidth = 0;
+        for (const line of rawLines)
+        {
+            maxLineWidth = Math.max(maxLineWidth, this.Font.MeasureText(line));
+        }
+        return { width: maxLineWidth, height: lineHeight * rawLines.length };
     }
 
     protected Render(worldTransforms: Transforms): void
@@ -1026,7 +1108,23 @@ export class TextUIPanel extends BaseUIPanel
         {
             const line = this._Lines[i];
 
+            // measure this line so we can offset the pen start for X alignment
+            let lineWidth = 0;
+            for (const char of line)
+            {
+                lineWidth += this.Font.GetGlyph(char).advance * scale;
+            }
+
             let pen = 0;
+            if (this.Layout.AlignX === AlignX.Center) 
+            {
+                pen = (worldTransforms.Width - lineWidth) / 2;
+            }
+            else if (this.Layout.AlignX === AlignX.Right)
+            {
+                pen = worldTransforms.Width - lineWidth;
+            }
+
             for (let j = 0; j < line.length; j++) 
             {
                 const char = line[j];
