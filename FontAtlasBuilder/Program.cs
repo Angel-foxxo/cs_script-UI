@@ -93,7 +93,7 @@ static class FontAtlasGenerator
 
             // assembling the fonts vmap from string templates instead of using the DataModel package because it doesn't support IOT yet
             vmapFontEnts += Templates.VMAP_FONT_ENTS
-               .Replace("_FONT_NAME_", fontName)
+               .Replace("_FONT_NAME_", fontNameLower)
                .Replace("_ENT_1_ORIGIN_", $"{i * 16} 0 16")
                .Replace("_ENT_2_ORIGIN_", $"{i * 16} 0 0")
                .Replace("_GUID_1_", Guid.NewGuid().ToString())

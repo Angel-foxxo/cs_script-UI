@@ -92,13 +92,13 @@
             
             "CMapEntity"
             {
-                "id" "elementid" "8fc310dd-9dcb-4434-8be8-dd34e2b247a1"
-                "name" "string" "CSUI.particle.font.panel.Roboto_Regular"
+                "id" "elementid" "852a61b2-5298-4887-ad07-a9913a154a52"
+                "name" "string" "CSUI.particle.font.panel.roboto_regular"
                 "hitNormal" "vector3" "0 0 0"
                 "isProceduralEntity" "bool" "0"
                 "relayPlugData" "DmePlugList"
                 {
-                    "id" "elementid" "5ce3b2b8-0cfd-4812-91df-8ba52e7df548"
+                    "id" "elementid" "ff117b36-ba7a-4154-9f91-068221717b1e"
                     "names" "string_array" [ ]
                     "dataTypes" "int_array" [ ]
                     "plugTypes" "int_array" [ ]
@@ -107,13 +107,13 @@
                 "connectionsData" "element_array" [ ]
                 "entity_properties" "EditGameClassProps"
                 {
-                    "id" "elementid" "d9eeaa75-cfec-41d9-8477-af59530c3109"
-                    "targetname" "string" "CSUI.particle.font.panel.Roboto_Regular"
+                    "id" "elementid" "ae64db36-1dcf-48be-8b8f-62692e0992d7"
+                    "targetname" "string" "CSUI.particle.font.panel.roboto_regular"
                     "classname" "string" "info_particle_system"
                     "origin" "string" "0 0 16"
                     "tint_cp" "string" "1"
                     "start_active" "string" "0"
-                    "effect_name" "string" "particles/csui/fonts/Roboto_Regular.vpcf"
+                    "effect_name" "string" "particles/csui/fonts/roboto_regular.vpcf"
                 }
                 "origin" "vector3" "0 0 0"
                 "angles" "qangle" "0 0 0"
@@ -129,13 +129,13 @@
             },
             "CMapEntity"
             {
-                "id" "elementid" "5ce3b2b8-0cfd-4812-91df-8ba52e7df548"
-                "name" "string" "CSUI.particle.font.panel.Roboto_Regular.template"
+                "id" "elementid" "ff117b36-ba7a-4154-9f91-068221717b1e"
+                "name" "string" "CSUI.particle.font.panel.roboto_regular.template"
                 "hitNormal" "vector3" "0 0 0"
                 "isProceduralEntity" "bool" "0"
                 "relayPlugData" "DmePlugList"
                 {
-                    "id" "elementid" "7445267e-23a6-4ea8-a7da-3fd1fc7bdbf4"
+                    "id" "elementid" "9c655507-798b-4f1d-9a57-a6ab79d96629"
                     "names" "string_array" [ ]
                     "dataTypes" "int_array" [ ]
                     "plugTypes" "int_array" [ ]
@@ -144,11 +144,11 @@
                 "connectionsData" "element_array" [ ]
                 "entity_properties" "EditGameClassProps"
                 {
-                    "id" "elementid" "10969144-0c5d-40b2-bab2-68c58c37b45a"
+                    "id" "elementid" "d58fc276-5ace-4d26-a9dd-f1937ea6e44d"
                     "origin" "string" "0 0 0"
-                    "targetname" "string" "CSUI.particle.font.panel.Roboto_Regular.template"
+                    "targetname" "string" "CSUI.particle.font.panel.roboto_regular.template"
                     "classname" "string" "point_template"
-                    "Template01" "string" "CSUI.particle.font.panel.Roboto_Regular"
+                    "Template01" "string" "CSUI.particle.font.panel.roboto_regular"
                 }
                 "origin" "vector3" "0 0 0"
                 "angles" "qangle" "0 0 0"

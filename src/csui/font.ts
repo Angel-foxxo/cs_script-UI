@@ -40,4 +40,20 @@ export class Font
     {
         return this.Glyphs[GetGlyphIndex(ch)] ?? this.Glyphs[GetGlyphIndex("?")];
     }
+
+    /** 
+     * Measures how much space the text string would take
+     */
+    public MeasureText(text: string): number
+    {
+        let space = 0;
+        for (let i = 0; i < text.length; i++) 
+        {
+            const char = text[i];
+            const glyph = this.GetGlyph(char);
+            space += glyph.advance;
+        }
+
+        return space;
+    }
 }

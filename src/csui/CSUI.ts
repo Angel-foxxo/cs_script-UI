@@ -957,6 +957,7 @@ export class TextUIPanel extends BaseUIPanel
     private TextEnts: Entity[] = [];
     
     private _Text: string = "";
+    private _Lines: string[] = [];
 
     public get Text(): string
     {
@@ -965,11 +966,13 @@ export class TextUIPanel extends BaseUIPanel
 
     public set Text(text: string)
     {
-        this._Text = text;
+        this._Text = NormalizeWhitespace(text);
 
+        const totalCharCount = this._Text.replace("\n", "").length;
+        
         this.CleanupOldText();
 
-        for (let i = 0; i < this._Text.length; i++) 
+        for (let i = 0; i < totalCharCount; i++) 
         {
             const particleTextPanel = this.ParticleTextPanelTemplate.ForceSpawn();
 
@@ -1015,28 +1018,40 @@ export class TextUIPanel extends BaseUIPanel
     {
         const scale = this.InheritedScale;
 
-        let pen = 0;
-        for (let i = 0; i < this.Text.length; i++) 
+        this._Lines = WrapText(this._Text, worldTransforms.Width / scale, this.Font).split("\n");
+
+        let textEntIndex = 0;
+
+        for (let i = 0; i < this._Lines.length; i++) 
         {
-            const char = this.Text[i];
-            const glyph = this.Font.GetGlyph(char);
+            const line = this._Lines[i];
 
-            const glyphWidth = glyph.pixelW * scale;
-            const glyphHeight = glyph.pixelH * scale;
-            
-            const alignmentOffset = (glyphWidth) / 2;
+            let pen = 0;
+            for (let j = 0; j < line.length; j++) 
+            {
+                const char = line[j];
+                const glyph = this.Font.GetGlyph(char);
 
-            const index = (GetGlyphIndex(char) ?? 72) - 0.01;
+                const glyphWidth = glyph.pixelW * scale;
+                const glyphHeight = glyph.pixelH * scale;
+                
+                const alignmentOffset = (glyphWidth) / 2;
 
-            Instance.EntFireAtTarget({ target: this.TextEnts[i], input: "SetControlPoint", value: `2: ${this.UI.Brightness} ${this.Color.a} ${index}` });
-            Instance.EntFireAtTarget({ target: this.TextEnts[i], input: "SetControlPoint", value: `3: ${glyphHeight} ${glyphWidth} 0` });
-            
-            Instance.EntFireAtTarget({ target: this.TextEnts[i], input: "SetControlPoint", value: `1: ${this.Color.r} ${this.Color.g} ${this.Color.b}` });
-            this.TextEnts[i].Teleport({ position: worldTransforms.Origin.add(this.UI.Angles.left.multiply((pen + alignmentOffset))), 
-                angles: this.UI.Angles,
-            });
+                const index = (GetGlyphIndex(char) ?? 72) - 0.01;
 
-            pen += glyph.advance * scale;
+                const textEnt = this.TextEnts[textEntIndex];
+                textEntIndex++;
+
+                Instance.EntFireAtTarget({ target: textEnt, input: "SetControlPoint", value: `2: ${this.UI.Brightness} ${this.Color.a} ${index}` });
+                Instance.EntFireAtTarget({ target: textEnt, input: "SetControlPoint", value: `3: ${glyphHeight} ${glyphWidth} 0` });
+                
+                Instance.EntFireAtTarget({ target: textEnt, input: "SetControlPoint", value: `1: ${this.Color.r} ${this.Color.g} ${this.Color.b}` });
+                textEnt.Teleport({ position: worldTransforms.Origin.add(this.UI.Angles.left.multiply((pen + alignmentOffset)).add(this.UI.Angles.down.multiply((i * this.Font.FontLineHeight * scale)))), 
+                    angles: this.UI.Angles,
+                });
+
+                pen += glyph.advance * scale;
+            }    
         }
     }
 
@@ -1148,4 +1163,113 @@ function GetPadding(padding: Layout["Padding"]): { pL: number, pR: number, pT: n
         pT: typeof padding === "number" ? padding : (padding?.top ?? 0),
         pB: typeof padding === "number" ? padding : (padding?.bottom ?? 0),
     };
+}
+
+// https://unicode-explorer.com/articles/space-characters
+function NormalizeWhitespace(str: string): string 
+{
+    // remove zero width chars that have no visual width
+    str = str.replace(/[\uFEFF\u200B\u200C\u2060]/g, '');
+
+    // ZWJ (\u200D) must be separate due to eslint no-misleading-character-class
+    // flags it inside a character class as it forms emoji sequences
+    str = str.replace(/\u200D/g, '');
+
+    // normalize all line endings to \n (CRLF first to avoid double \n)
+    str = str
+        .replace(/\r\n/g, '\n')
+        .replace(/[\r\u0085\u2028\u2029\v\f]/g, '\n');
+
+    // normalize tabs to 4 spaces
+    str = str.replace(/\t/g, '    ');
+  
+    // normalize all weird space chars to a regular space U+0020
+    str = str.replace(
+        /[\u00A0\u2000-\u200A\u202F\u205F\u3000\u180E\u2800\u3164]/g,
+        ' ',
+    );
+
+    return str;
+}
+
+function WrapWord(word: string, maxWidth: number, font: Font, currentLine: string, currentWidth: number, wrappedLines: string[]): { line: string, width: number }
+{
+    for (const char of word)
+    {
+        const charWidth = font.GetGlyph(char).advance;
+        if (currentWidth + charWidth > maxWidth)
+        {
+            wrappedLines.push(currentLine);
+            currentLine = '';
+            currentWidth = 0;
+        }
+        currentLine += char;
+        currentWidth += charWidth;
+    }
+    return { line: currentLine, width: currentWidth };
+}
+
+function WrapText(text: string, maxWidth: number, font: Font): string
+{
+    const lines = text.split('\n');
+    const wrappedLines: string[] = [];
+
+    for (const line of lines)
+    {
+        if (line.length === 0)
+        {
+            wrappedLines.push('');
+            continue;
+        }
+
+        const words = line.split(' ');
+        let currentLine = '';
+        let currentWidth = 0;
+        const spaceWidth = font.GetGlyph(' ').advance;
+
+        for (const word of words)
+        {
+            let wordWidth = 0;
+            for (const char of word)
+            {
+                wordWidth += font.GetGlyph(char).advance;
+            }
+
+            if (wordWidth > maxWidth)
+            {
+                if (currentLine.length > 0)
+                {
+                    wrappedLines.push(currentLine);
+                    currentLine = '';
+                    currentWidth = 0;
+                }
+                const result = WrapWord(word, maxWidth, font, currentLine, currentWidth, wrappedLines);
+                currentLine = result.line;
+                currentWidth = result.width;
+            }
+            else
+            {
+                const addWidth = currentLine.length === 0 ? wordWidth : spaceWidth + wordWidth;
+
+                if (currentLine.length > 0 && currentWidth + addWidth > maxWidth)
+                {
+                    wrappedLines.push(currentLine);
+                    currentLine = word;
+                    currentWidth = wordWidth;
+                }
+                else
+                {
+                    currentLine = currentLine.length === 0 ? word : currentLine + ' ' + word;
+                    currentWidth += addWidth;
+                }
+            }
+        }
+
+        if (currentLine.length > 0)
+        {
+            wrappedLines.push(currentLine);
+        }
+    }
+
+    return wrappedLines.join('\n');
 }

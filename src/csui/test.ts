@@ -10,7 +10,7 @@ Instance.ServerCommand("mp_force_pick_time 0");
 const TestUITarget = Instance.FindEntityByName("testui.target")!;
 let TestUI: UI | undefined = undefined;
 
-UISetDebug(false);
+UISetDebug(true);
 
 interface ThemeColors
 {
@@ -52,7 +52,7 @@ const CurrentTheme: ThemeColors = DarkTheme;
 
 function SpawnUI()
 {
-    const menuItems = ["CMBN", "SCAN IN PROGRESS", "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG", "Lorem ipsum dolor sit amet, consectetuer", "!\"@#$%^&*}{_+-=,./\\?:;<>][()`'", "1234567890"];
+    const menuItems = ["CMBN", "SCAN IN PROGRESS", "THE QUICK BROWN FOX \nJUMPS OVER THE LAZY DOG", "Lorem          ipsum dolor \n      sit amet, consectetuer", "!\"@#$%^&*}{_+-=,./\\?:;<>][()`'", "1234567890"];
     const menuColors = [
         { r: 80, g: 212, b: 85, a: 255 },
         { r: 205, g: 212, b: 80, a: 255 },
@@ -86,16 +86,16 @@ function SpawnUI()
         menuItemPanel.Color = CurrentTheme.AppSoft;
         menuItemPanel.Layout = {
             Width: Size.Grow,
-            Height: 10,
+            Height: 20,
             AlignX: AlignX.Center,
             AlignY: AlignY.Center,
-            Padding: 4,
+            Padding: 0,
         };
 
         const textPanel = new TextUIPanel(menuItemPanel, Fonts.Roboto_Regular, menuItems[i]);
         textPanel.Layout = {
-            Width: Size.Grow,
-            Height: 1,
+            Width: 10,
+            Height: Size.Grow,
             Scale: 3,
         };
 
