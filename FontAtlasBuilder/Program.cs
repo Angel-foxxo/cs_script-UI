@@ -185,7 +185,10 @@ static class FontAtlasGenerator
         string dir = Path.Combine(outputPath, fontName);
         Directory.CreateDirectory(dir);
 
-       
+        // save blank png used for padding frames, padding frames are added to avoid the particle system showing a ghost of the previous glyph
+        using var blankbmp = new Bitmap(2, 2, PixelFormat.Format32bppArgb);
+        blankbmp.Save(Path.Combine(dir, "blank.png"), ImageFormat.Png);
+
         var sf = StringFormat.GenericTypographic;
         sf.FormatFlags |= StringFormatFlags.MeasureTrailingSpaces;
 
@@ -196,7 +199,7 @@ static class FontAtlasGenerator
             using var bmp = new Bitmap(glyph.Width, glyph.Height, PixelFormat.Format32bppArgb);
             using (var g = Graphics.FromImage(bmp))
             {
-                g.Clear(System.Drawing.Color.Transparent);
+                g.Clear(Color.Transparent);
                 g.TextRenderingHint = TextRenderingHint.AntiAlias;
                 g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
 
@@ -205,6 +208,9 @@ static class FontAtlasGenerator
             string fileName = $"{(int)glyph.Char}.png";
             string filePath = Path.Combine(dir, fileName);
             bmp.Save(filePath, ImageFormat.Png);
+            // padding frame
+            sb.AppendLine($"frame blank.png 1");
+            // real frame
             sb.AppendLine($"frame {fileName} 1");
         }
 

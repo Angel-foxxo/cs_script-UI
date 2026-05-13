@@ -1135,7 +1135,12 @@ export class TextUIPanel extends BaseUIPanel
                 
                 const alignmentOffset = (glyphWidth) / 2;
 
-                const index = (GetGlyphIndex(char) ?? 72) - 0.01;
+                let index = GetGlyphIndex(char);
+
+                // skip past padding frames, padding frames are added to avoid the particle system showing a ghost of the previous glyph
+                // min needed to ensure last char in atlas displays properly, no clue man
+                const maxIndex = 2 * this.Font.CharCount - 1;
+                index = Math.min((2 * index + 1) / maxIndex, 0.999);
 
                 const textEnt = this.TextEnts[textEntIndex];
                 textEntIndex++;

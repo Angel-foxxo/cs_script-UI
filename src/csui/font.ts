@@ -20,6 +20,11 @@ export class Font
         return this._FontName;
     }
 
+    public get CharCount(): number
+    {
+        return this.Glyphs.length;
+    }
+
     public get FontLineHeight(): number
     {
         return this._FontLineHeight;
@@ -33,12 +38,11 @@ export class Font
     }
 
     /** 
-     * Looks up metrics by char, falling back to '?' if char isn't valid  
      * Valid chars + spaces: ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!\"@#$%^&*}{_+-=,./\\?:;<>][()`'
      */
     public GetGlyph(ch: string): GlyphMetrics
     {
-        return this.Glyphs[GetGlyphIndex(ch)] ?? this.Glyphs[GetGlyphIndex("?")];
+        return this.Glyphs[GetGlyphIndex(ch)];
     }
 
     /** 

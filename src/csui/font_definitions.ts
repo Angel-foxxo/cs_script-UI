@@ -17,7 +17,7 @@ export const CharToGlyphs: Map<number, number> = new Map<number, number>();
  */
 export function GetGlyphIndex(ch: string): number
 {
-    return CharToGlyphs.get(ch.charCodeAt(0)) ?? 72;
+    return CharToGlyphs.get(ch.charCodeAt(0)) ?? 0;
 }
 
 export const Roboto_Regular: Font = new Font("Roboto_Regular", 1.200195, [
