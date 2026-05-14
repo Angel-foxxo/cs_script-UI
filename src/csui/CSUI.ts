@@ -1122,6 +1122,7 @@ export class TextUIPanel extends BaseUIPanel
     private Font: Font;
     private ParticleTextPanelTemplate: PointTemplate;
     private TextEnts: Entity[] = [];
+    private PoolSize: number = 0;
     
     private _Text: string = "";
     private _Lines: string[] = [];
@@ -1134,40 +1135,19 @@ export class TextUIPanel extends BaseUIPanel
     public set Text(text: string)
     {
         const normalized = NormalizeWhitespace(text);
-
         if (normalized === this._Text) return;
-
         this._Text = normalized;
-        
-        const totalCharCount = this._Text.replace("\n", "").length;
-        
-        this.CleanupOldText();
 
-        for (let i = 0; i < totalCharCount; i++) 
+        const needed = this._Text.replace("\n", "").length;
+
+        for (let i = this.PoolSize; i < needed; i++)
         {
-            const particleTextPanel = this.ParticleTextPanelTemplate.ForceSpawn();
-
-            if (particleTextPanel === undefined || particleTextPanel.length === 0 || !particleTextPanel[0].IsValid())
-            {
-                Log("Failed to spawn particle panel");
-            }
-
-            const textPanel = particleTextPanel![0];
-
-            this.TextEnts.push(textPanel);
-
-            Instance.EntFireAtTarget({ target: textPanel, input: "start" });
-        }
-    }
-
-    private CleanupOldText()
-    {
-        for (const textEnt of this.TextEnts) 
-        {
-            Instance.EntFireAtTarget({ target: textEnt, input: "kill" });
+            const ent = this.ParticleTextPanelTemplate.ForceSpawn()![0];
+            Instance.EntFireAtTarget({ target: ent, input: "start" });
+            this.TextEnts.push(ent);
         }
 
-        this.TextEnts.length = 0;
+        this.PoolSize = Math.max(this.PoolSize, needed);
     }
 
     constructor(parent: BaseUIPanel | UI, font: Fonts, text: string, name: string | undefined = undefined)
@@ -1278,20 +1258,37 @@ export class TextUIPanel extends BaseUIPanel
 
                 Instance.EntFireAtTarget({ target: textEnt, input: "SetControlPoint", value: `2: ${this.UI.Brightness} ${this.Color.a} ${index}` });
                 Instance.EntFireAtTarget({ target: textEnt, input: "SetControlPoint", value: `3: ${glyphHeight} ${glyphWidth} 0` });
-                
                 Instance.EntFireAtTarget({ target: textEnt, input: "SetControlPoint", value: `1: ${this.Color.r} ${this.Color.g} ${this.Color.b}` });
-                textEnt.Teleport({ position: worldTransforms.Origin.add(this.UI.Angles.left.multiply((pen + alignmentOffset)).add(this.UI.Angles.down.multiply(verticalOffset + (i * this.Font.FontLineHeight * scale)))), 
+                textEnt.Teleport({ 
+                    position: worldTransforms.Origin
+                        .add(this.UI.Angles.left.multiply(pen + alignmentOffset))
+                        .add(this.UI.Angles.down.multiply(verticalOffset + (i * this.Font.FontLineHeight * scale))), 
                     angles: this.UI.Angles,
                 });
 
                 pen += glyph.advance * scale;
             }    
         }
+
+        // hide unused pool slots
+        for (let i = textEntIndex; i < this.PoolSize; i++)
+        {
+            Instance.EntFireAtTarget({ 
+                target: this.TextEnts[i], 
+                input: "SetControlPoint", 
+                value: "3: 0 0 0",
+            });
+        }
     }
 
     protected Cleanup(): void 
     {
-        this.CleanupOldText();
+        for (const ent of this.TextEnts)
+        {
+            Instance.EntFireAtTarget({ target: ent, input: "kill" });
+        }
+        this.TextEnts.length = 0;
+        this.PoolSize = 0;
     }
 }
 /////// UTILS ///////
