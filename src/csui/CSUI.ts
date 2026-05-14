@@ -90,6 +90,8 @@ export enum AnimationValueTypes
     Alpha,
     Scale,
     VisualScale,
+    Width,
+    Height,
 }
 
 interface Animation<AnimationValues> 
@@ -111,6 +113,24 @@ interface PlayerInteraction
     ClickingBy: Set<CSPlayerPawn>,
     MousePosByPlayer: Map<CSPlayerPawn, Vec3>,
     MouseMovingBy: Set<CSPlayerPawn>
+}
+
+export class Event<TArgs extends unknown[]>
+{
+    private _callbacks: ((...args: TArgs) => void)[] = [];
+
+    public Add(cb: (...args: TArgs) => void): void
+    {
+        this._callbacks.push(cb);
+    }
+
+    public Invoke(...args: TArgs): void
+    {
+        for (const cb of this._callbacks)
+        {
+            cb(...args);
+        }
+    }
 }
 
 export class UI
@@ -289,6 +309,8 @@ export abstract class BaseUIPanel
     public Animate(target: number, speed: number, type: AnimationValueTypes.Alpha): void;
     public Animate(target: number, speed: number, type: AnimationValueTypes.Scale): void;
     public Animate(target: number, speed: number, type: AnimationValueTypes.VisualScale): void;
+    public Animate(target: number, speed: number, type: AnimationValueTypes.Width): void;
+    public Animate(target: number, speed: number, type: AnimationValueTypes.Height): void;
 
     public Animate(target: AnimationValues, speed: number, type: AnimationValueTypes): void 
     {
@@ -392,41 +414,12 @@ export abstract class BaseUIPanel
     }
 
     ///////// Callbacks (panel, player) /////////
-    private OnMouseEnterCallbacks: ((panel: BaseUIPanel, player: CSPlayerPawn) => void)[] = [];
-    private OnMouseLeaveCallbacks: ((panel: BaseUIPanel, player: CSPlayerPawn) => void)[] = [];
-    private OnMouseDownCallbacks: ((panel: BaseUIPanel, player: CSPlayerPawn) => void)[] = [];
-    private OnMouseUpCallbacks: ((panel: BaseUIPanel, player: CSPlayerPawn) => void)[] = [];
-    private MouseMovedCallbacks: ((panel: BaseUIPanel, player: CSPlayerPawn) => void)[] = [];
-    private ThinkCallbacks: ((p: BaseUIPanel, transforms: Transforms) => void)[] = [];
-
-    public OnMouseEnter(cb: (panel: BaseUIPanel, player: CSPlayerPawn) => void): void  
-    {
-        this.OnMouseEnterCallbacks.push(cb); 
-    }
-    public OnMouseLeave(cb: (panel: BaseUIPanel, player: CSPlayerPawn) => void): void  
-    {
-        this.OnMouseLeaveCallbacks.push(cb); 
-    }
-    public OnMouseDown(cb: (panel: BaseUIPanel, player: CSPlayerPawn) => void): void  
-    {
-        this.OnMouseDownCallbacks.push(cb); 
-    }
-    public OnMouseUp(cb: (panel: BaseUIPanel, player: CSPlayerPawn) => void): void  
-    {
-        this.OnMouseUpCallbacks.push(cb); 
-    }
-    public OnMouseMoved(cb: (panel: BaseUIPanel, player: CSPlayerPawn) => void): void  
-    {
-        this.MouseMovedCallbacks.push(cb); 
-    }
-
-    /** Adds a new think callback, think callbacks are called in the order they are added.  
-     *  Called after layout, but before rendering.
-     */
-    public OnThink(cb: (p: BaseUIPanel, transforms: Transforms) => void): void                        
-    {
-        this.ThinkCallbacks.push(cb); 
-    }
+    public readonly OnMouseEnter = new Event<[BaseUIPanel, CSPlayerPawn]>();
+    public readonly OnMouseLeave = new Event<[BaseUIPanel, CSPlayerPawn]>();
+    public readonly OnMouseDown = new Event<[BaseUIPanel, CSPlayerPawn]>();
+    public readonly OnMouseUp = new Event<[BaseUIPanel, CSPlayerPawn]>();
+    public readonly OnMouseMoved = new Event<[BaseUIPanel, CSPlayerPawn]>();
+    public readonly OnThink = new Event<[BaseUIPanel, Transforms]>();
 
     constructor(parent: BaseUIPanel | UI, name: string | undefined = undefined)
     {
@@ -482,10 +475,7 @@ export abstract class BaseUIPanel
 
         const transforms = this.CalculateWorldTransforms(parentWorldTransforms);
 
-        for (const thinkCallback of this.ThinkCallbacks) 
-        {
-            thinkCallback(this, transforms);
-        }
+        this.OnThink.Invoke(this, transforms);
 
         if (Debug)
         {
@@ -549,6 +539,22 @@ export abstract class BaseUIPanel
                 {
                     const r = LerpNum(this.Layout.VisualScale ?? 1, anim.target as number, anim.speed);
                     this.Layout.VisualScale = r.value;
+                    done = r.done;
+                    break;
+                }
+
+                case AnimationValueTypes.Width:
+                {
+                    const r = LerpNum((this.Layout.Width as number) ?? 1, anim.target as number, anim.speed);
+                    this.Layout.Width = r.value;
+                    done = r.done;
+                    break;
+                }
+
+                case AnimationValueTypes.Height:
+                {
+                    const r = LerpNum((this.Layout.Height as number) ?? 1, anim.target as number, anim.speed);
+                    this.Layout.Height = r.value;
                     done = r.done;
                     break;
                 }
@@ -837,10 +843,7 @@ export abstract class BaseUIPanel
     {
         if (this.PlayerInteraction.HoveredBy.delete(player))
         {
-            for (const cb of this.OnMouseLeaveCallbacks) 
-            {
-                cb(this, player);
-            }
+            this.OnMouseLeave.Invoke(this, player);
         }
 
         this.PlayerInteraction.ClickingBy.delete(player);
@@ -876,9 +879,11 @@ export abstract class BaseUIPanel
         {
             if (this.PlayerInteraction.HoveredBy.delete(player))
             {
-                for (const cb of this.OnMouseLeaveCallbacks) 
+                this.OnMouseLeave.Invoke(this, player);
+
+                if (state.isClicking)
                 {
-                    cb(this, player);
+                    this.OnMouseUp.Invoke(this, player);
                 }
             }
 
@@ -889,11 +894,7 @@ export abstract class BaseUIPanel
         if (!this.PlayerInteraction.HoveredBy.has(player))
         {
             this.PlayerInteraction.HoveredBy.add(player);
-
-            for (const cb of this.OnMouseEnterCallbacks) 
-            {
-                cb(this, player);
-            }
+            this.OnMouseEnter.Invoke(this, player);
         }
 
         if (state.clickingChanged)
@@ -901,20 +902,12 @@ export abstract class BaseUIPanel
             if (state.isClicking)
             {
                 this.PlayerInteraction.ClickingBy.add(player);
-
-                for (const cb of this.OnMouseDownCallbacks) 
-                {
-                    cb(this, player);
-                }
+                this.OnMouseDown.Invoke(this, player);
             }
             else
             {
                 this.PlayerInteraction.ClickingBy.delete(player);
-
-                for (const cb of this.OnMouseUpCallbacks) 
-                {
-                    cb(this, player);
-                }
+                this.OnMouseUp.Invoke(this, player);
             }
         }
 
@@ -925,11 +918,7 @@ export abstract class BaseUIPanel
         {
             this.PlayerInteraction.MousePosByPlayer.set(player, localHitPos);
             this.PlayerInteraction.MouseMovingBy.add(player);
-            
-            for (const cb of this.MouseMovedCallbacks) 
-            {
-                cb(this, player);
-            }
+            this.OnMouseMoved.Invoke(this, player);
         }
         else
         {
@@ -1144,8 +1133,12 @@ export class TextUIPanel extends BaseUIPanel
 
     public set Text(text: string)
     {
-        this._Text = NormalizeWhitespace(text);
+        const normalized = NormalizeWhitespace(text);
 
+        if (normalized === this._Text) return;
+
+        this._Text = normalized;
+        
         const totalCharCount = this._Text.replace("\n", "").length;
         
         this.CleanupOldText();
@@ -1228,6 +1221,18 @@ export class TextUIPanel extends BaseUIPanel
 
         this._Lines = WrapText(this._Text, worldTransforms.Width / scale, this.Font).split("\n");
 
+        const totalTextHeight = this._Lines.length * this.Font.FontLineHeight * scale;
+
+        let verticalOffset = 0;
+        if (this.Layout.AlignY === AlignY.Center)
+        {
+            verticalOffset = (worldTransforms.Height - totalTextHeight) / 2;
+        }
+        else if (this.Layout.AlignY === AlignY.Bottom)
+        {
+            verticalOffset = worldTransforms.Height - totalTextHeight;
+        }
+    
         let textEntIndex = 0;
 
         for (let i = 0; i < this._Lines.length; i++) 
@@ -1275,7 +1280,7 @@ export class TextUIPanel extends BaseUIPanel
                 Instance.EntFireAtTarget({ target: textEnt, input: "SetControlPoint", value: `3: ${glyphHeight} ${glyphWidth} 0` });
                 
                 Instance.EntFireAtTarget({ target: textEnt, input: "SetControlPoint", value: `1: ${this.Color.r} ${this.Color.g} ${this.Color.b}` });
-                textEnt.Teleport({ position: worldTransforms.Origin.add(this.UI.Angles.left.multiply((pen + alignmentOffset)).add(this.UI.Angles.down.multiply((i * this.Font.FontLineHeight * scale)))), 
+                textEnt.Teleport({ position: worldTransforms.Origin.add(this.UI.Angles.left.multiply((pen + alignmentOffset)).add(this.UI.Angles.down.multiply(verticalOffset + (i * this.Font.FontLineHeight * scale)))), 
                     angles: this.UI.Angles,
                 });
 

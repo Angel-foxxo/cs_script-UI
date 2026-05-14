@@ -1,7 +1,8 @@
-import { Color, Instance } from "cs_script/point_script";
-import { AlignX, AlignY, Flow, InvisUIPanel, Shape, Size, TextUIPanel, UI, UIPanel, UISetDebug } from "./CSUI";
+import { Instance } from "cs_script/point_script";
+import { AlignX, AlignY, AnimationValueTypes, Flow, InvisUIPanel, Shape, Size, TextUIPanel, UI, UIPanel, UISetDebug } from "./CSUI";
 import { Euler, Vec3 } from "@s2ze/math";
 import { Fonts } from "./font_definitions";
+import { Button, CurrentTheme } from "./controls";
 
 Instance.ServerCommand("mp_warmup_offline_enabled 1");
 Instance.ServerCommand("mp_warmup_pausetimer 1");
@@ -12,43 +13,20 @@ let TestUI: UI | undefined = undefined;
 
 UISetDebug(false);
 
-interface ThemeColors
-{
-    /**For background elements like the window itself and titlebars.*/
-    App: Color,
-    /**For element which need to stand out from the background.*/
-    AppMiddle: Color,
-    /**For element which need to sit between App and AppSoft colors.*/
-    AppSoft: Color,
-    /**For borders meant to visually separate parts of the interface.*/
-    Border: Color,
-    /**For any element which needs contrast from the background, like text*/
-    Contrast: Color,
-    /**For any element which needs contrast but doesn't have to be as visible, like inactive text or scrollbars*/
-    ContrastSoft: Color,
-    /**For anything that needs to be accented like hovering over a tab*/
-    HoverAccent: Color,
-    /**For anything that needs to be accented*/
-    Accent: Color,
-}
-
-const DarkTheme: ThemeColors = {
-    App: { r:22, g:25, b:32, a:255 },
-    AppMiddle: { r:34, g:39, b:51, a:255 },
-    AppSoft: { r:44, g:49, b:61, a:255 },
-
-    Border: { r:51, g:57, b:74, a:255 },
-
-    Contrast: { r: 255, g: 255, b: 255, a: 255 },
-    ContrastSoft: { r:158, g:159, b:164, a:255 },
-
-    HoverAccent: { r:0, g:66, b:151, a:255 },
-    Accent: { r:99, g:161, b:255, a:255 },
-};
-
-const CurrentTheme: ThemeColors = DarkTheme;
-
 //UISetDebug(true);
+
+Instance.OnPlayerChat(({ text }) => 
+{
+    if (text === "test")
+    {
+        const iconPanels = TestUI!.GetPanels("*iconPanel");
+
+        for (const iconPanel of iconPanels) 
+        {
+            iconPanel.Layout.Width = 30;
+        }
+    }
+});
 
 function SpawnUI()
 {
@@ -64,6 +42,7 @@ function SpawnUI()
     ];
 
     TestUI = new UI();
+    TestUI.AddPlayer(Instance.GetPlayerController(0)!.GetPlayerPawn()!);
     TestUI.Brightness = 2;
     TestUI.AlignX = AlignX.Center;
     TestUI.AlignY = AlignY.Center;
@@ -107,12 +86,36 @@ function SpawnUI()
             Height: Size.Grow,
         };
 
-        const iconPanel = new UIPanel(menuItemPanel, Shape.Rect);
-        iconPanel.Color = CurrentTheme.Accent;
-        iconPanel.Layout = {
-            Width: 15,
-            Height: 15,
-        };
+        const buttonPanel = new Button(menuItemPanel, Shape.Rect, i + "iconPanel");
+        buttonPanel.Text = "test button";
+        buttonPanel.Layout.Width = 15;
+        buttonPanel.Layout.Height = 15;
+        buttonPanel.TextScale = 4;
+
+        buttonPanel.OnMouseDown.Add(() => 
+        {
+            buttonPanel.Text = "pressed";
+            buttonPanel.Animate(30, 0.2, AnimationValueTypes.Width);
+
+        });
+
+        buttonPanel.OnMouseUp.Add(() => 
+        {
+            buttonPanel.Text = buttonPanel.AnyHovered ? "hovered" : "test button";
+            buttonPanel.Animate(15, 0.2, AnimationValueTypes.Width);
+        });
+
+        buttonPanel.OnMouseEnter.Add(() => 
+        {
+            buttonPanel.Text = "hovered";
+            buttonPanel.Animate(1.3, 0.2, AnimationValueTypes.Scale);
+        });
+
+        buttonPanel.OnMouseLeave.Add(() => 
+        {
+            buttonPanel.Text = "test button";
+            buttonPanel.Animate(1, 0.2, AnimationValueTypes.Scale);
+        });
     }
 }
 
