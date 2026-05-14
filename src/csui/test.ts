@@ -1,8 +1,8 @@
 import { Instance } from "cs_script/point_script";
-import { AlignX, AlignY, AnimationValueTypes, Flow, InvisUIPanel, Shape, Size, TextUIPanel, UI, UIPanel, UISetDebug } from "./CSUI";
+import { AlignX, AlignY, AnimationValueTypes, Flow, Shape, Size, TextUIPanel, UI, UIPanel, UISetDebug } from "./CSUI";
 import { Euler, Vec3 } from "@s2ze/math";
 import { Fonts } from "./font_definitions";
-import { Button, CurrentTheme } from "./controls";
+import { Button, CurrentTheme, Slider } from "./controls";
 
 Instance.ServerCommand("mp_warmup_offline_enabled 1");
 Instance.ServerCommand("mp_warmup_pausetimer 1");
@@ -69,28 +69,39 @@ function SpawnUI()
             AlignX: AlignX.Center,
             AlignY: AlignY.Center,
             Flow: Flow.LeftRight,
+            ChildGap: 2,
             Padding: 2,
         };
 
         const textPanel = new TextUIPanel(menuItemPanel, Fonts.Roboto_Regular, menuItems[i]);
-        textPanel.Layout.Scale = 4;
-        textPanel.Layout.Height = Size.Fit;
-        textPanel.Layout.Width = Size.Fit;
-        textPanel.Layout.AlignX = AlignX.Left;
         textPanel.Color = menuColors[i];
+        textPanel.Layout = {
+            Scale: 4,
+            Height: Size.Fit,
+            Width: Size.Fit,
+            AlignX: AlignX.Left,
+        };
 
-        const gapPanel = new InvisUIPanel(menuItemPanel);
+        const gapPanel = new Slider(menuItemPanel);
         gapPanel.Color = CurrentTheme.AppSoft;
+        gapPanel.SliderThickness = 2;
+        gapPanel.KnobRadius = 2;
         gapPanel.Layout = {
             Width: Size.Grow,
             Height: Size.Grow,
         };
+        gapPanel.OnValueChanged.Add((t) => 
+        {
+            textPanel.Color.a = ((1 - t) * 255);
+        });
 
         const buttonPanel = new Button(menuItemPanel, Shape.Rect, i + "iconPanel");
         buttonPanel.Text = "test button";
-        buttonPanel.Layout.Width = 15;
-        buttonPanel.Layout.Height = 15;
         buttonPanel.TextScale = 4;
+        buttonPanel.Layout = {
+            Width: 15,
+            Height: 15,
+        };
 
         buttonPanel.OnMouseDown.Add(() => 
         {

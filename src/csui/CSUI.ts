@@ -290,8 +290,8 @@ export abstract class BaseUIPanel
     public ZIndex: number = 1;
 
     ///////// Layout /////////
-    public Layout: Layout = {
 
+    private static readonly DefaultLayout: Layout = {
         Width: 50,
         Height: 50,
         Flow: Flow.LeftRight,
@@ -300,6 +300,18 @@ export abstract class BaseUIPanel
         AlignX: AlignX.Center,
         AlignY: AlignY.Center,
     };
+
+    private _Layout: Layout = { ...BaseUIPanel.DefaultLayout };
+
+    public get Layout(): Layout
+    {
+        return this._Layout;
+    }
+
+    public set Layout(layout: Partial<Layout>)
+    {
+        this._Layout = { ...BaseUIPanel.DefaultLayout, ...layout };
+    }
 
     ///////// Animation /////////
     private Animations: Animation<unknown>[] = [];
@@ -880,6 +892,7 @@ export abstract class BaseUIPanel
             if (this.PlayerInteraction.HoveredBy.delete(player))
             {
                 this.OnMouseLeave.Invoke(this, player);
+                this.PlayerInteraction.ClickingBy.delete(player);
 
                 if (state.isClicking)
                 {
@@ -1376,6 +1389,11 @@ function Log(msg: string, debugOnly: boolean = false)
     }
 
     Instance.Msg(`CSUI: ${msg}`);
+}
+
+export function Remap(value: number, low1: number, high1: number, low2: number, high2: number) 
+{
+    return low2 + (high2 - low2) * (value - low1) / (high1 - low1);
 }
 
 function ArrayRemoveByRef<T>(array: T[], item: T): boolean
