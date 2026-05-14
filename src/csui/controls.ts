@@ -221,6 +221,16 @@ export class Slider extends InvisUIPanel
     public set SliderLength(length: number)
     {
         this._SliderLength = length;
+
+        if (this.Orientation === Orientation.Horizontal)
+        {
+            this.Layout.Width = Size.Fit;
+        }
+        else
+        {
+            this.Layout.Height = Size.Fit;
+        }
+   
         this.SetBodySize();
     }
 

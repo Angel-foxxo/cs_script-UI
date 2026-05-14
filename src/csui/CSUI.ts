@@ -1277,7 +1277,9 @@ export class TextUIPanel extends BaseUIPanel
         {
             maxLineWidth = Math.max(maxLineWidth, this.Font.MeasureText(line));
         }
-        return { width: maxLineWidth, height: lineHeight * rawLines.length };
+        
+        // small epsilon to avoid numerical imprecision causeing last char to wrap
+        return { width: maxLineWidth + 0.01, height: lineHeight * rawLines.length };
     }
 
     protected Render(worldTransforms: Transforms): void

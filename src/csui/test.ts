@@ -30,7 +30,7 @@ Instance.OnPlayerChat(({ text }) =>
 
 function SpawnUI()
 {
-    const menuItems = ["CMBN", "SCAN IN PROGRESS", "THE QUICK BROWN FOX JUMPS OVER THE \nLAZY DOG", "Lorem          ipsum dolor \n      sit amet, consectetuer", "!\"@#$%^&*}{_+-=,./\\?:;<>][()`'", "1234567890"];
+    const menuItems = ["CMBN", "SCAN IN PROGRESS", "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG", "Lorem          ipsum dolor       sit amet, consectetuer", "!\"@#$%^&*}{_+-=,./\\?:;<>][()`'", "1234567890"];
     const menuColors = [
         { r: 80, g: 212, b: 85, a: 255 },
         { r: 205, g: 212, b: 80, a: 255 },
@@ -76,10 +76,10 @@ function SpawnUI()
         const textPanel = new TextUIPanel(menuItemPanel, Fonts.Roboto_Regular, menuItems[i]);
         textPanel.Color = menuColors[i];
         textPanel.Layout = {
-            Scale: 4,
+            Scale: 5,
             Height: Size.Fit,
-            Width: Size.Fit,
-            AlignX: AlignX.Left,
+            Width: Size.Grow,
+            AlignX: AlignX.Center,
         };
 
         const gapPanel = new Slider(menuItemPanel, Orientation.Horizontal);
@@ -87,7 +87,7 @@ function SpawnUI()
         gapPanel.SliderThickness = 2;
         gapPanel.OnValueChanged.Add((t) => 
         {
-            textPanel.Color.a = ((1 - t) * 255);
+            textPanel.Layout.Scale = ((1 - t) * 5);
         });
 
         const buttonPanel = new Button(menuItemPanel, Shape.Rect, i + "iconPanel");
@@ -101,7 +101,7 @@ function SpawnUI()
         buttonPanel.OnMouseDown.Add(() => 
         {
             buttonPanel.Text = "pressed";
-            buttonPanel.Animate(30, 0.2, AnimationValueTypes.Width);
+            buttonPanel.Animate(45, 0.2, AnimationValueTypes.Width);
 
         });
 
