@@ -2,7 +2,7 @@ import { Instance } from "cs_script/point_script";
 import { AlignX, AlignY, AnimationValueTypes, Flow, Shape, Size, TextUIPanel, UI, UIPanel, UISetDebug } from "./CSUI";
 import { Euler, Vec3 } from "@s2ze/math";
 import { Fonts } from "./font_definitions";
-import { Button, CurrentTheme, Slider } from "./controls";
+import { Button, CurrentTheme, Orientation, Slider } from "./controls";
 
 Instance.ServerCommand("mp_warmup_offline_enabled 1");
 Instance.ServerCommand("mp_warmup_pausetimer 1");
@@ -82,14 +82,9 @@ function SpawnUI()
             AlignX: AlignX.Left,
         };
 
-        const gapPanel = new Slider(menuItemPanel);
+        const gapPanel = new Slider(menuItemPanel, Orientation.Horizontal);
         gapPanel.Color = CurrentTheme.AppSoft;
         gapPanel.SliderThickness = 2;
-        gapPanel.KnobRadius = 2;
-        gapPanel.Layout = {
-            Width: Size.Grow,
-            Height: Size.Grow,
-        };
         gapPanel.OnValueChanged.Add((t) => 
         {
             textPanel.Color.a = ((1 - t) * 255);

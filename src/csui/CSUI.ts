@@ -150,6 +150,23 @@ export class UI
         return this._Players;
     }
 
+    private readonly _InputLockByPlayer: Map<CSPlayerPawn, BaseUIPanel> = new Map();
+
+    public GetInputLock(player: CSPlayerPawn): BaseUIPanel | undefined
+    {
+        return this._InputLockByPlayer.get(player);
+    }
+
+    public SetInputLock(player: CSPlayerPawn, panel: BaseUIPanel): void
+    {
+        this._InputLockByPlayer.set(player, panel);
+    }
+
+    public ClearInputLock(player: CSPlayerPawn): void
+    {
+        this._InputLockByPlayer.delete(player);
+    }
+
     private _CleanupMode: boolean = false;
     public get CleanupMode(): boolean
     {
@@ -182,6 +199,7 @@ export class UI
     public RemovePlayer(pawn: CSPlayerPawn): void
     {
         this._Players.delete(pawn);
+        this._InputLockByPlayer.delete(pawn);
 
         // remove any lingering player state on every panel
         if (this.Root !== undefined)
@@ -312,6 +330,13 @@ export abstract class BaseUIPanel
     {
         this._Layout = { ...BaseUIPanel.DefaultLayout, ...layout };
     }
+
+    ///////// Input lock /////////
+
+    /**
+     * When true, holding the mouse button while hovering this panel will lock all input to it for that player until the button is released
+     */
+    public LockInput: boolean = false;
 
     ///////// Animation /////////
     private Animations: Animation<unknown>[] = [];
@@ -870,6 +895,20 @@ export abstract class BaseUIPanel
 
     private HandleInteractionForPlayer(player: CSPlayerPawn, state: PlayerState, worldTransforms: Transforms): void
     {
+        // if another panel holds the input lock for this player, skip all interaction on this panel
+        const lockHolder = this.UI.GetInputLock(player);
+        if (lockHolder !== undefined && lockHolder !== this)
+        {
+            // ensure we clear any stale hover/click state that may have been set before the lock was acquired
+            if (this.PlayerInteraction.HoveredBy.delete(player))
+            {
+                this.OnMouseLeave.Invoke(this, player);
+            }
+            this.PlayerInteraction.ClickingBy.delete(player);
+            this.PlayerInteraction.MouseMovingBy.delete(player);
+            return;
+        }
+
         const edges0 = worldTransforms.Origin;
         const edges1 = edges0.add(this.UI.Angles.left.multiply(worldTransforms.Width));
         const edges2 = edges0.add(this.UI.Angles.down.multiply(worldTransforms.Height));
@@ -887,7 +926,9 @@ export abstract class BaseUIPanel
             && barycentricUVT.u <= 1.0
             && barycentricUVT.v <= 1.0;
 
-        if (!isHit)
+        const weHoldLock = lockHolder === this;
+
+        if (!isHit && !weHoldLock)
         {
             if (this.PlayerInteraction.HoveredBy.delete(player))
             {
@@ -904,7 +945,8 @@ export abstract class BaseUIPanel
             return;
         }
 
-        if (!this.PlayerInteraction.HoveredBy.has(player))
+        // cursor is over this panel or we hold the lock
+        if (isHit && !this.PlayerInteraction.HoveredBy.has(player))
         {
             this.PlayerInteraction.HoveredBy.add(player);
             this.OnMouseEnter.Invoke(this, player);
@@ -916,22 +958,52 @@ export abstract class BaseUIPanel
             {
                 this.PlayerInteraction.ClickingBy.add(player);
                 this.OnMouseDown.Invoke(this, player);
+
+                if (this.LockInput)
+                {
+                    this.UI.SetInputLock(player, this);
+                }
             }
             else
             {
                 this.PlayerInteraction.ClickingBy.delete(player);
                 this.OnMouseUp.Invoke(this, player);
+
+                // release the lock when the mouse button is released
+                if (weHoldLock)
+                {
+                    this.UI.ClearInputLock(player);
+
+                    // if the cursor is no longer over us, fire a leave now that the lock is gone
+                    if (!isHit && this.PlayerInteraction.HoveredBy.delete(player))
+                    {
+                        this.OnMouseLeave.Invoke(this, player);
+                    }
+                }
             }
         }
 
-        const localHitPos = new Vec3(barycentricUVT.u, barycentricUVT.v, 0);
-        const prevPos = this.PlayerInteraction.MousePosByPlayer.get(player);
+        // normal hit: use the exact barycentric UV
+        // lock held and ray still intersects the panel plane: clamp uv to 0..1
+        const rayOnPlane = barycentricUVT !== undefined && barycentricUVT.t >= 0.0 && barycentricUVT.t <= 1.0;
+        const resolvedPos = isHit
+            ? new Vec3(barycentricUVT.u, barycentricUVT.v, 0)
+            : (weHoldLock && rayOnPlane) ? new Vec3(Math.max(0, Math.min(1, barycentricUVT.u)), Math.max(0, Math.min(1, barycentricUVT.v)), 0) : undefined;
 
-        if (prevPos === undefined || !localHitPos.equals(prevPos))
+        if (resolvedPos !== undefined)
         {
-            this.PlayerInteraction.MousePosByPlayer.set(player, localHitPos);
-            this.PlayerInteraction.MouseMovingBy.add(player);
-            this.OnMouseMoved.Invoke(this, player);
+            const prevPos = this.PlayerInteraction.MousePosByPlayer.get(player);
+
+            if (prevPos === undefined || !resolvedPos.equals(prevPos))
+            {
+                this.PlayerInteraction.MousePosByPlayer.set(player, resolvedPos);
+                this.PlayerInteraction.MouseMovingBy.add(player);
+                this.OnMouseMoved.Invoke(this, player);
+            }
+            else
+            {
+                this.PlayerInteraction.MouseMovingBy.delete(player);
+            }
         }
         else
         {

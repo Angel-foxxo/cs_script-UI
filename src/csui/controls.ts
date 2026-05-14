@@ -1,8 +1,10 @@
 import { Color, CSPlayerPawn } from "cs_script/point_script";
-import { AlignX, AnimationValueTypes, Event, Flow, InvisUIPanel, Remap, Shape, Size, TextUIPanel, UIPanel } from "./CSUI";
+import { AlignX, AlignY, AnimationValueTypes, Event, Flow, InvisUIPanel, Remap, Shape, Size, TextUIPanel, UIPanel } from "./CSUI";
 import { Fonts } from "./font_definitions";
 
 export const DEFAULT_FONT: Fonts = Fonts.Roboto_Regular;
+
+//////////////// THEME ////////////////
 
 interface ThemeColors
 {
@@ -39,6 +41,8 @@ const DarkTheme: ThemeColors = {
 };
 
 export const CurrentTheme: ThemeColors = DarkTheme;
+
+//////////////// BUTTON ////////////////
 
 export class Button extends UIPanel
 {
@@ -122,19 +126,29 @@ export class Button extends UIPanel
 
 };
 
+//////////////// SLIDER ////////////////
+
+export enum Orientation
+{
+    Horizontal,
+    Vertical,
+}
+
 export class Slider extends InvisUIPanel
 {
     private _SliderBody: UIPanel;
     private _SliderSpacer: InvisUIPanel;
     private _SliderKnob: UIPanel;
-    private _SliderThickness: number = 10;
-    private _KnobRadius: number = this._SliderThickness;
+    private _SliderThickness: number = 1;
+    private _KnobSize: number = 1;
     private _MouseT: number = 0;
+    private _KnobColor: Color = CurrentTheme.Accent;
+    private _SliderColor: Color = CurrentTheme.Border;
+    private _SliderLength = 10;
+
+    private Orientation: Orientation;
 
     public readonly OnValueChanged = new Event<[number]>();
-
-    public _KnobColor: Color = CurrentTheme.Accent;
-    public _SliderColor: Color = CurrentTheme.Border;
 
     public get SliderThickness(): number
     {
@@ -144,19 +158,25 @@ export class Slider extends InvisUIPanel
     public set SliderThickness(thickness: number) 
     {
         this._SliderThickness = thickness;
-        this._SliderBody.Layout.Height = this.SliderThickness;
+
+        if (this.Orientation === Orientation.Horizontal)
+        {
+            this._SliderBody.Layout.Height = this.SliderThickness;
+        }
+        else
+        {
+            this._SliderBody.Layout.Width = this.SliderThickness;
+        }
     }
 
-    public get KnobRadius(): number
+    public get KnobSize(): number
     {
-        return this._KnobRadius;
+        return this._KnobSize;
     }
 
-    public set KnobRadius(radius: number) 
+    public set KnobSize(radius: number) 
     {
-        this._KnobRadius = radius;
-        this._SliderKnob.Layout.Height = radius * 2;
-        this._SliderKnob.Layout.Width = radius * 2;
+        this._KnobSize = radius;
     }
 
     public get KnobColor(): Color
@@ -191,6 +211,19 @@ export class Slider extends InvisUIPanel
         this._MouseT = t;
     }
 
+    /** Used if the slider is set to Size.Fit */
+    public get SliderLength(): number
+    {
+        return this._SliderLength; 
+    }
+
+    /** Used if the slider is set to Size.Fit */
+    public set SliderLength(length: number)
+    {
+        this._SliderLength = length;
+        this.SetBodySize();
+    }
+
     private CalculateMouseT(player: CSPlayerPawn)
     {
         const mousePos = this.GetMousePos(player);
@@ -202,28 +235,57 @@ export class Slider extends InvisUIPanel
 
         if (this.IsClickingBy(player))
         {
-            this.MouseT = mousePos.x;
+            // for now mouse pos is local to panel, we will see if this changes
+            this.MouseT = this.Orientation === Orientation.Horizontal ? mousePos.x : mousePos.y;
             this.OnValueChanged.Invoke(this.MouseT);
         }
     }
 
-    constructor(parent: UIPanel, name: string | undefined = undefined)
+    private GetKnobRadius(): number
+    {
+        return this.SliderThickness * this.KnobSize * 2;
+    }
+
+    private SetBodySize()
+    {
+        if (this.Orientation === Orientation.Horizontal)
+        {
+            this._SliderBody.Layout.Height = this.SliderThickness;
+            this._SliderBody.Layout.Width = this.Layout.Width === Size.Fit ? this._SliderLength : Size.Grow;
+        }
+        else
+        {
+            this._SliderBody.Layout.Height = this.Layout.Height === Size.Fit ? this._SliderLength : Size.Grow;
+            this._SliderBody.Layout.Width = this.SliderThickness;
+        }
+       
+    }
+
+    constructor(parent: UIPanel, orientation: Orientation, name: string | undefined = undefined)
     {
         super(parent, name);
 
+        this.Orientation = orientation;
+        this.Layout.Width = this.Orientation === Orientation.Horizontal ? Size.Grow : Size.Fit;
+        this.Layout.Height = this.Orientation === Orientation.Horizontal ? Size.Fit : Size.Grow;
+
+        this.LockInput = true;
+
         this._SliderBody = new UIPanel(this, Shape.Rect);
-        this._SliderBody.Layout.Height = this.SliderThickness;
-        this._SliderBody.Layout.Width = Size.Grow;
         this._SliderBody.Color = this.SliderColor;
-        this._SliderBody.Layout.Flow = Flow.LeftRight;
-        this._SliderBody.Layout.AlignX = AlignX.Left;
+        this._SliderBody.Layout = { 
+            Flow: this.Orientation === Orientation.Horizontal ? Flow.LeftRight : Flow.TopBottom,
+            AlignX: this.Orientation === Orientation.Horizontal ? AlignX.Left : AlignX.Center,
+            AlignY: this.Orientation === Orientation.Horizontal ? AlignY.Center : AlignY.Top,
+        };
+
+        this.SetBodySize();
 
         this._SliderSpacer = new InvisUIPanel(this._SliderBody);
         this._SliderSpacer.Layout.Height = 0;
+        this._SliderSpacer.Layout.Width = 0;
     
         this._SliderKnob = new UIPanel(this._SliderBody, Shape.Elipse);
-        this._SliderKnob.Layout.Height = this.KnobRadius * 2;
-        this._SliderKnob.Layout.Width = this.KnobRadius * 2;
         this._SliderKnob.Color = this.KnobColor;
 
         this.OnMouseDown.Add((_, player) => 
@@ -238,9 +300,21 @@ export class Slider extends InvisUIPanel
 
         this.OnThink.Add(() => 
         {
-            const t = Remap(this.MouseT, 0, 1, 0, this.LayoutTransforms.Width - this.KnobRadius * 2);
+            this._SliderKnob.Layout.Width = this.GetKnobRadius();
+            this._SliderKnob.Layout.Height = this.GetKnobRadius();
 
-            this._SliderSpacer.Layout.Width = t;
+            const sliderAxis = this.Orientation === Orientation.Horizontal ? this.LayoutTransforms.Width : this.LayoutTransforms.Height;
+
+            const t = Remap(this.MouseT, 0, 1, 0, sliderAxis - this.GetKnobRadius());
+
+            if (this.Orientation === Orientation.Horizontal)
+            {
+                this._SliderSpacer.Layout.Width = t;
+            }
+            else
+            {
+                this._SliderSpacer.Layout.Height = t;
+            }
         });
     }
 }
