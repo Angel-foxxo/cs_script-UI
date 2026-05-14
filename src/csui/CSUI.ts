@@ -136,6 +136,21 @@ export class UI
         return this._CleanupMode;
     }
 
+    public GetPanel(name: string): BaseUIPanel | undefined
+    {
+        if (this.Root?.Name === name)
+        {
+            return this.Root;
+        }
+
+        return this.Root?.GetPanel(name);
+    }
+
+    public GetPanels(name: string): BaseUIPanel[]
+    {
+        return this.Root?.GetPanels(name) ?? [];
+    }
+
     public AddPlayer(pawn: CSPlayerPawn): void
     {
         if (!this._Players.has(pawn))
@@ -192,6 +207,64 @@ export abstract class BaseUIPanel
     public readonly UI: UI;
 
     protected readonly LayoutTransforms: Transforms = { Origin: Vec3.Zero, Width: 0, Height: 0 };
+
+    private _Name?: string;
+
+    public get Name(): string | undefined
+    {
+        return this._Name;
+    }
+
+    public GetPanel(name: string): BaseUIPanel | undefined
+    {
+        if (this.Name === name)
+        {
+            return this;
+        }
+        
+        for (const panel of this.Children) 
+        {
+            const childPanel = panel.GetPanel(name);   
+            
+            if (childPanel !== undefined)
+            {
+                return childPanel;
+            }
+        }
+    }
+
+    private MatchNamePattern(pattern: string, name: string | undefined): boolean
+    {
+        if (name === undefined)
+        {
+            return false;
+        }
+
+        return new RegExp("^" + pattern.replace(/\*/g, ".*") + "$").test(name);
+    }
+
+    private GetPanelsInternal(name: string, panels: BaseUIPanel[])
+    {
+        if (this.MatchNamePattern(name, this.Name))
+        {
+            panels.push(this);
+        }
+        
+        for (const panel of this.Children) 
+        {
+            panel.GetPanelsInternal(name, panels);
+        }
+    }
+
+    /** Finds all panels in the hierarchy matching the name, supports * wild cards */
+    public GetPanels(name: string): BaseUIPanel[]
+    {
+        const panels: BaseUIPanel[] = [];
+
+        this.GetPanelsInternal(name, panels);
+
+        return panels;
+    }
 
     public Color: Color = { r: 255, g: 255, b: 255, a: 255 };
     public ZIndex: number = 1;
@@ -319,40 +392,46 @@ export abstract class BaseUIPanel
     }
 
     ///////// Callbacks (panel, player) /////////
-    private OnMouseEnterCallback?: (panel: BaseUIPanel, player: CSPlayerPawn) => void;
-    private OnMouseLeaveCallback?: (panel: BaseUIPanel, player: CSPlayerPawn) => void;
-    private OnMouseDownCallback?: (panel: BaseUIPanel, player: CSPlayerPawn) => void;
-    private OnMouseUpCallback?: (panel: BaseUIPanel, player: CSPlayerPawn) => void;
-    private MouseMovedCallback?: (panel: BaseUIPanel, player: CSPlayerPawn) => void;
-    private ThinkCallback?: (p: BaseUIPanel, transforms: Transforms) => void;
+    private OnMouseEnterCallbacks: ((panel: BaseUIPanel, player: CSPlayerPawn) => void)[] = [];
+    private OnMouseLeaveCallbacks: ((panel: BaseUIPanel, player: CSPlayerPawn) => void)[] = [];
+    private OnMouseDownCallbacks: ((panel: BaseUIPanel, player: CSPlayerPawn) => void)[] = [];
+    private OnMouseUpCallbacks: ((panel: BaseUIPanel, player: CSPlayerPawn) => void)[] = [];
+    private MouseMovedCallbacks: ((panel: BaseUIPanel, player: CSPlayerPawn) => void)[] = [];
+    private ThinkCallbacks: ((p: BaseUIPanel, transforms: Transforms) => void)[] = [];
 
     public OnMouseEnter(cb: (panel: BaseUIPanel, player: CSPlayerPawn) => void): void  
     {
-        this.OnMouseEnterCallback = cb; 
+        this.OnMouseEnterCallbacks.push(cb); 
     }
     public OnMouseLeave(cb: (panel: BaseUIPanel, player: CSPlayerPawn) => void): void  
     {
-        this.OnMouseLeaveCallback = cb; 
+        this.OnMouseLeaveCallbacks.push(cb); 
     }
     public OnMouseDown(cb: (panel: BaseUIPanel, player: CSPlayerPawn) => void): void  
     {
-        this.OnMouseDownCallback = cb; 
+        this.OnMouseDownCallbacks.push(cb); 
     }
     public OnMouseUp(cb: (panel: BaseUIPanel, player: CSPlayerPawn) => void): void  
     {
-        this.OnMouseUpCallback = cb; 
+        this.OnMouseUpCallbacks.push(cb); 
     }
     public OnMouseMoved(cb: (panel: BaseUIPanel, player: CSPlayerPawn) => void): void  
     {
-        this.MouseMovedCallback = cb; 
-    }
-    public OnThink(cb: (p: BaseUIPanel, transforms: Transforms) => void): void                        
-    {
-        this.ThinkCallback = cb; 
+        this.MouseMovedCallbacks.push(cb); 
     }
 
-    constructor(parent: BaseUIPanel | UI)
+    /** Adds a new think callback, think callbacks are called in the order they are added.  
+     *  Called after layout, but before rendering.
+     */
+    public OnThink(cb: (p: BaseUIPanel, transforms: Transforms) => void): void                        
     {
+        this.ThinkCallbacks.push(cb); 
+    }
+
+    constructor(parent: BaseUIPanel | UI, name: string | undefined = undefined)
+    {
+        this._Name = name;
+
         if (parent instanceof UI)
         {
             this.UI = parent;
@@ -403,7 +482,10 @@ export abstract class BaseUIPanel
 
         const transforms = this.CalculateWorldTransforms(parentWorldTransforms);
 
-        if (this.ThinkCallback !== undefined) this.ThinkCallback(this, transforms);
+        for (const thinkCallback of this.ThinkCallbacks) 
+        {
+            thinkCallback(this, transforms);
+        }
 
         if (Debug)
         {
@@ -755,7 +837,10 @@ export abstract class BaseUIPanel
     {
         if (this.PlayerInteraction.HoveredBy.delete(player))
         {
-            if (this.OnMouseLeaveCallback !== undefined) this.OnMouseLeaveCallback(this, player);
+            for (const cb of this.OnMouseLeaveCallbacks) 
+            {
+                cb(this, player);
+            }
         }
 
         this.PlayerInteraction.ClickingBy.delete(player);
@@ -791,7 +876,10 @@ export abstract class BaseUIPanel
         {
             if (this.PlayerInteraction.HoveredBy.delete(player))
             {
-                if (this.OnMouseLeaveCallback !== undefined) this.OnMouseLeaveCallback(this, player);
+                for (const cb of this.OnMouseLeaveCallbacks) 
+                {
+                    cb(this, player);
+                }
             }
 
             this.PlayerInteraction.MouseMovingBy.delete(player);
@@ -801,7 +889,11 @@ export abstract class BaseUIPanel
         if (!this.PlayerInteraction.HoveredBy.has(player))
         {
             this.PlayerInteraction.HoveredBy.add(player);
-            if (this.OnMouseEnterCallback !== undefined) this.OnMouseEnterCallback(this, player);
+
+            for (const cb of this.OnMouseEnterCallbacks) 
+            {
+                cb(this, player);
+            }
         }
 
         if (state.clickingChanged)
@@ -809,12 +901,20 @@ export abstract class BaseUIPanel
             if (state.isClicking)
             {
                 this.PlayerInteraction.ClickingBy.add(player);
-                if (this.OnMouseDownCallback !== undefined) this.OnMouseDownCallback(this, player);
+
+                for (const cb of this.OnMouseDownCallbacks) 
+                {
+                    cb(this, player);
+                }
             }
             else
             {
                 this.PlayerInteraction.ClickingBy.delete(player);
-                if (this.OnMouseUpCallback !== undefined) this.OnMouseUpCallback(this, player);
+
+                for (const cb of this.OnMouseUpCallbacks) 
+                {
+                    cb(this, player);
+                }
             }
         }
 
@@ -825,7 +925,11 @@ export abstract class BaseUIPanel
         {
             this.PlayerInteraction.MousePosByPlayer.set(player, localHitPos);
             this.PlayerInteraction.MouseMovingBy.add(player);
-            if (this.MouseMovedCallback !== undefined) this.MouseMovedCallback(this, player);
+            
+            for (const cb of this.MouseMovedCallbacks) 
+            {
+                cb(this, player);
+            }
         }
         else
         {
@@ -934,9 +1038,9 @@ export class ModelUIPanel extends BaseUIPanel
         return this._Visual;
     }
 
-    constructor(parent: BaseUIPanel | UI, model: BaseModelEntity, width: number, height: number)
+    constructor(parent: BaseUIPanel | UI, model: BaseModelEntity, width: number, height: number, name: string | undefined = undefined)
     {
-        super(parent);
+        super(parent, name);
         this.Layout.Width = width;
         this.Layout.Height = height;
         this._Visual = model;
@@ -971,9 +1075,9 @@ export class UIPanel extends BaseUIPanel
         return this._Visual;
     }
 
-    constructor(parent: BaseUIPanel | UI, shape: Shape = Shape.Rect)
+    constructor(parent: BaseUIPanel | UI, shape: Shape = Shape.Rect, name: string | undefined = undefined)
     {
-        super(parent);
+        super(parent, name);
 
         let particleTemplateName = "";
 
@@ -1073,9 +1177,9 @@ export class TextUIPanel extends BaseUIPanel
         this.TextEnts.length = 0;
     }
 
-    constructor(parent: BaseUIPanel | UI, font: Fonts, text: string)
+    constructor(parent: BaseUIPanel | UI, font: Fonts, text: string, name: string | undefined = undefined)
     {
-        super(parent);
+        super(parent, name);
 
         // text panels size themselves to fit their content by default
         this.Layout.Width = Size.Fit;
