@@ -511,11 +511,11 @@ export class Slider extends BaseControl
 
             if (this.Orientation === Orientation.Horizontal)
             {
-                this._SliderSpacer.Layout.Width = t;
+                this._SliderSpacer.Animate(t, 0.5, AnimationValueTypes.Width);
             }
             else
             {
-                this._SliderSpacer.Layout.Height = t;
+                this._SliderSpacer.Animate(t, 0.5, AnimationValueTypes.Height);
             }
         });
     }
