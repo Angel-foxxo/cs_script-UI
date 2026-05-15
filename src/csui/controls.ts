@@ -1,4 +1,4 @@
-import { Color, CSPlayerPawn } from "cs_script/point_script";
+import { Color, CSPlayerPawn, Instance } from "cs_script/point_script";
 import { AlignX, AlignY, AnimationValueTypes, Event, Flow, InvisUIPanel, Remap, Shape, Size, TextUIPanel, UIPanel } from "./CSUI";
 import { Fonts } from "./font_definitions";
 
@@ -42,13 +42,20 @@ const DarkTheme: ThemeColors = {
 
 export const CurrentTheme: ThemeColors = DarkTheme;
 
+// use an internal base panel so users can't accidentally override internal layout configuration
+export abstract class BaseControl extends InvisUIPanel
+{
+    protected abstract _BasePanel: UIPanel;
+
+}
 //////////////// BUTTON ////////////////
 
-export class Button extends UIPanel
+export class Button extends BaseControl
 {
     private _TextPanel: TextUIPanel;
     private _Text: string = "";
     private _DefaultColor: Color = CurrentTheme.Border;
+    protected _BasePanel: UIPanel;
 
     public get DefaultColor(): Color 
     {
@@ -92,35 +99,169 @@ export class Button extends UIPanel
 
     constructor(parent: UIPanel, shape: Shape = Shape.Rect, name: string | undefined = undefined)
     {
-        super(parent, shape, name);
+        super(parent, name);
 
-        this.Color = this.DefaultColor;
-        this.Layout.Flow = Flow.TopBottom;
-        
-        this._TextPanel = new TextUIPanel(this, DEFAULT_FONT, "");
+        this._BasePanel = new UIPanel(this, shape);
+        this._BasePanel.Color = this._DefaultColor;
+        this._BasePanel.Layout = {
+            Flow: Flow.TopBottom,
+            Width: Size.Grow,
+            Height: Size.Grow,
+        };
+
+        this._TextPanel = new TextUIPanel(this._BasePanel, DEFAULT_FONT, "");
         this._TextPanel.Color = CurrentTheme.Contrast;
         this._TextPanel.Layout.Width = Size.Grow;
         this._TextPanel.Layout.Height = Size.Grow;
 
-        this.OnMouseEnter.Add(() => 
+        this._BasePanel.OnMouseEnter.Add(() => 
         {
-            this.Animate(this.HoveredColor, 0.2, AnimationValueTypes.Color);
+            this._BasePanel.Animate(this.HoveredColor, 0.2, AnimationValueTypes.Color);
         });
 
         this.OnMouseLeave.Add(() => 
         {
-            this.Animate(this.DefaultColor, 0.2, AnimationValueTypes.Color);
+            this._BasePanel.Animate(this.DefaultColor, 0.2, AnimationValueTypes.Color);
+
+        });
+
+        this._BasePanel.OnMouseDown.Add(() => 
+        {
+            this._BasePanel.Animate(this.PressedColor, 0.2, AnimationValueTypes.Color);
+        });
+
+        this._BasePanel.OnMouseUp.Add(() => 
+        {
+            this._BasePanel.Animate(this.AnyHovered ? this.HoveredColor : this.DefaultColor, 0.2, AnimationValueTypes.Color);
+        });
+    }       
+
+};
+
+//////////////// RADIO BUTTON ////////////////
+
+export class RadioButton extends BaseControl
+{
+    private _DotPanel: UIPanel;
+    protected _BasePanel: UIPanel;
+    private _DefaultColor: Color = CurrentTheme.Border;
+    private _DotColor: Color = CurrentTheme.App;
+    private _DotPressedColor: Color = CurrentTheme.Accent;
+    private _Pressed: boolean = false;
+
+    public readonly OnPressed = new Event<[boolean]>();
+
+    public get DefaultColor(): Color 
+    {
+        return this._DefaultColor;
+    }
+
+    public set DefaultColor(color: Color)
+    {
+        this._DefaultColor = color;
+
+        if (!this.AnyHovered)
+        {
+            this._BasePanel.Color = this._DefaultColor;
+        }
+    }
+
+    public get Pressed(): boolean 
+    {
+        return this._Pressed;
+    }
+
+    public set Pressed(pressed: boolean)
+    {
+        if (this._Pressed === pressed)
+        {
+            return;
+        }
+
+        this._Pressed = pressed;
+        this.OnPressed.Invoke(this.Pressed);
+        this._DotPanel.Animate(pressed ? this.DotPressedColor : this.DotColor, 0.6, AnimationValueTypes.Color);
+        this._BasePanel.Animate(this.Pressed ? this.HoveredColor : this.DefaultColor, 0.2, AnimationValueTypes.Color);
+
+        if (this.Parent === undefined || pressed === false || this.Name === undefined) return;
+        
+        for (const child of this.UI.GetPanels(this.Name)) 
+        {
+            const radioButton = child as RadioButton;
+
+            if (radioButton !== undefined && child !== this)
+            {
+                radioButton.Pressed = false;
+            }
+        }
+    }
+
+    public get DotColor(): Color 
+    {
+        return this._DotColor;
+    }
+
+    public set DotColor(color: Color)
+    {
+        this._DotColor = color;
+
+        if (!this.Pressed)
+        {
+            this._DotPanel.Color = color;
+        }
+    }
+
+    public get DotPressedColor(): Color 
+    {
+        return this._DotPressedColor;
+    }
+
+    public set DotPressedColor(color: Color)
+    {
+        this._DotPressedColor = color;
+        if (this.Pressed)
+        {
+            this._DotPanel.Color = color;
+        }
+    }
+
+    public HoveredColor: Color = CurrentTheme.HoverAccent;
+
+    constructor(parent: UIPanel, name: string | undefined = undefined)
+    {
+        super(parent, name);
+
+        this._BasePanel = new UIPanel(this, Shape.Elipse);
+        this._BasePanel.Color = this._DefaultColor;
+        this._BasePanel.Layout = {
+            Padding: 2,
+            Width: Size.Grow,
+            Height: Size.Grow,
+        };
+
+        this._DotPanel = new UIPanel(this._BasePanel, Shape.Elipse, "");
+        this._DotPanel.Color = this.DotColor;
+        this._DotPanel.Layout.Width = Size.Grow;
+        this._DotPanel.Layout.Height = Size.Grow;
+
+        this._BasePanel.OnMouseEnter.Add(() => 
+        {
+            this._BasePanel.Animate(this.HoveredColor, 0.2, AnimationValueTypes.Color);
+        });
+
+        this._BasePanel.OnMouseLeave.Add(() => 
+        {
+            this._BasePanel.Animate(this.Pressed ? this.HoveredColor : this.DefaultColor, 0.2, AnimationValueTypes.Color);
 
         });
 
         this.OnMouseDown.Add(() => 
         {
-            this.Animate(this.PressedColor, 0.2, AnimationValueTypes.Color);
         });
 
         this.OnMouseUp.Add(() => 
         {
-            this.Animate(this.AnyHovered ? this.HoveredColor : this.DefaultColor, 0.2, AnimationValueTypes.Color);
+            this.Pressed = !this.Pressed;
         });
     }       
 
@@ -134,9 +275,9 @@ export enum Orientation
     Vertical,
 }
 
-export class Slider extends InvisUIPanel
+export class Slider extends BaseControl
 {
-    private _SliderBody: UIPanel;
+    protected _BasePanel: UIPanel;
     private _SliderSpacer: InvisUIPanel;
     private _SliderKnob: UIPanel;
     private _SliderThickness: number = 1;
@@ -161,11 +302,11 @@ export class Slider extends InvisUIPanel
 
         if (this.Orientation === Orientation.Horizontal)
         {
-            this._SliderBody.Layout.Height = this.SliderThickness;
+            this._BasePanel.Layout.Height = this.SliderThickness;
         }
         else
         {
-            this._SliderBody.Layout.Width = this.SliderThickness;
+            this._BasePanel.Layout.Width = this.SliderThickness;
         }
     }
 
@@ -198,7 +339,7 @@ export class Slider extends InvisUIPanel
     public set SliderColor(color: Color)
     {
         this._SliderColor = color;
-        this._SliderBody.Color = color;
+        this._BasePanel.Color = color;
     }
 
     public get MouseT(): number
@@ -260,13 +401,13 @@ export class Slider extends InvisUIPanel
     {
         if (this.Orientation === Orientation.Horizontal)
         {
-            this._SliderBody.Layout.Height = this.SliderThickness;
-            this._SliderBody.Layout.Width = this.Layout.Width === Size.Fit ? this._SliderLength : Size.Grow;
+            this._BasePanel.Layout.Height = this.SliderThickness;
+            this._BasePanel.Layout.Width = this.Layout.Width === Size.Fit ? this._SliderLength : Size.Grow;
         }
         else
         {
-            this._SliderBody.Layout.Height = this.Layout.Height === Size.Fit ? this._SliderLength : Size.Grow;
-            this._SliderBody.Layout.Width = this.SliderThickness;
+            this._BasePanel.Layout.Height = this.Layout.Height === Size.Fit ? this._SliderLength : Size.Grow;
+            this._BasePanel.Layout.Width = this.SliderThickness;
         }
        
     }
@@ -274,16 +415,17 @@ export class Slider extends InvisUIPanel
     constructor(parent: UIPanel, orientation: Orientation, name: string | undefined = undefined)
     {
         super(parent, name);
-
         this.Orientation = orientation;
+        this.LockInput = true;
+
         this.Layout.Width = this.Orientation === Orientation.Horizontal ? Size.Grow : Size.Fit;
         this.Layout.Height = this.Orientation === Orientation.Horizontal ? Size.Fit : Size.Grow;
 
         this.LockInput = true;
 
-        this._SliderBody = new UIPanel(this, Shape.Rect);
-        this._SliderBody.Color = this.SliderColor;
-        this._SliderBody.Layout = { 
+        this._BasePanel = new UIPanel(this, Shape.Rect);
+        this._BasePanel.Color = this.SliderColor;
+        this._BasePanel.Layout = { 
             Flow: this.Orientation === Orientation.Horizontal ? Flow.LeftRight : Flow.TopBottom,
             AlignX: this.Orientation === Orientation.Horizontal ? AlignX.Left : AlignX.Center,
             AlignY: this.Orientation === Orientation.Horizontal ? AlignY.Center : AlignY.Top,
@@ -291,11 +433,11 @@ export class Slider extends InvisUIPanel
 
         this.SetBodySize();
 
-        this._SliderSpacer = new InvisUIPanel(this._SliderBody);
+        this._SliderSpacer = new InvisUIPanel(this._BasePanel);
         this._SliderSpacer.Layout.Height = 0;
         this._SliderSpacer.Layout.Width = 0;
     
-        this._SliderKnob = new UIPanel(this._SliderBody, Shape.Elipse);
+        this._SliderKnob = new UIPanel(this._BasePanel, Shape.Elipse);
         this._SliderKnob.Color = this.KnobColor;
 
         this.OnMouseDown.Add((_, player) => 

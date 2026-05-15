@@ -1,8 +1,9 @@
 import { Instance } from "cs_script/point_script";
-import { AlignX, AlignY, AnimationValueTypes, Flow, Shape, Size, TextUIPanel, UI, UIPanel, UISetDebug } from "./CSUI";
+import { AlignX, AlignY, AnimationValueTypes, BaseUIPanel, Flow, InvisUIPanel, Shape, Size, TextUIPanel, UI, UIPanel, UISetDebug } from "./CSUI";
 import { Euler, Vec3 } from "@s2ze/math";
 import { Fonts } from "./font_definitions";
-import { Button, CurrentTheme, Orientation, Slider } from "./controls";
+import { Button, CurrentTheme, Orientation, RadioButton, Slider } from "./controls";
+import { Font } from "./font";
 
 Instance.ServerCommand("mp_warmup_offline_enabled 1");
 Instance.ServerCommand("mp_warmup_pausetimer 1");
@@ -30,7 +31,32 @@ Instance.OnPlayerChat(({ text }) =>
 
 function SpawnUI()
 {
+    TestUI = new UI();
+    TestUI.AddPlayer(Instance.GetPlayerController(0)!.GetPlayerPawn()!);
+    TestUI.Brightness = 2;
+    TestUI.AlignX = AlignX.Center;
+    TestUI.AlignY = AlignY.Center;
+    TestUI.Origin = new Vec3(TestUITarget.GetAbsOrigin());
+    TestUI.Angles = new Euler(TestUITarget.GetAbsAngles());
+
+    const root = new InvisUIPanel(TestUI);
+    root.Color = CurrentTheme.App;
+    root.Layout = {
+        Width: Size.Fit,
+        Height: Size.Fit,
+        Flow: Flow.LeftRight,
+        Padding: 2,
+        ChildGap: 10,
+    };
+
+    SpawnTestUI(root);
+    SpawnTestUIControPanel(root);
+}
+
+function SpawnTestUI(parent: BaseUIPanel): UIPanel
+{
     const menuItems = ["CMBN", "SCAN IN PROGRESS", "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG", "Lorem          ipsum dolor       sit amet, consectetuer", "!\"@#$%^&*}{_+-=,./\\?:;<>][()`'", "1234567890"];
+
     const menuColors = [
         { r: 80, g: 212, b: 85, a: 255 },
         { r: 205, g: 212, b: 80, a: 255 },
@@ -41,15 +67,7 @@ function SpawnUI()
         
     ];
 
-    TestUI = new UI();
-    TestUI.AddPlayer(Instance.GetPlayerController(0)!.GetPlayerPawn()!);
-    TestUI.Brightness = 2;
-    TestUI.AlignX = AlignX.Center;
-    TestUI.AlignY = AlignY.Center;
-    TestUI.Origin = new Vec3(TestUITarget.GetAbsOrigin());
-    TestUI.Angles = new Euler(TestUITarget.GetAbsAngles());
-
-    const root = new UIPanel(TestUI);
+    const root = new UIPanel(parent);
     root.Color = CurrentTheme.App;
     root.Layout = {
         Width: 140,
@@ -82,10 +100,10 @@ function SpawnUI()
             AlignX: AlignX.Center,
         };
 
-        const gapPanel = new Slider(menuItemPanel, Orientation.Horizontal);
-        gapPanel.Color = CurrentTheme.AppSoft;
-        gapPanel.SliderThickness = 2;
-        gapPanel.OnValueChanged.Add((t) => 
+        const sliderPanel = new Slider(menuItemPanel, Orientation.Horizontal);
+        sliderPanel.Color = CurrentTheme.AppSoft;
+        sliderPanel.SliderThickness = 2;
+        sliderPanel.OnValueChanged.Add((t) => 
         {
             textPanel.Layout.Scale = ((1 - t) * 5);
         });
@@ -123,6 +141,105 @@ function SpawnUI()
             buttonPanel.Animate(1, 0.2, AnimationValueTypes.Scale);
         });
     }
+
+    return root;
+}
+
+function SpawnTestUIControPanel(parent: BaseUIPanel): UIPanel
+{
+    const root = new UIPanel(parent);
+    root.Color = CurrentTheme.App;
+    root.Layout = {
+        Width: 70,
+        Height: Size.Grow,
+        AlignY: AlignY.Top,
+        AlignX: AlignX.Left,
+        Flow: Flow.TopBottom,
+        Padding: 2,
+        ChildGap: 2,
+    };
+
+    const radioButtonsPanel = new InvisUIPanel(root);
+    radioButtonsPanel.Color = CurrentTheme.AppMiddle;
+    radioButtonsPanel.Layout = {
+        Width: Size.Grow,
+        Height: Size.Fit,
+        Flow: Flow.TopBottom,
+        AlignX: AlignX.Left,
+        ChildGap: 2,
+    };
+
+    function getRadioButtonStateName(radioButton: RadioButton): string
+    {
+        let name = "";
+
+        if (radioButton.AnyHovered)
+        {
+            name += " hovered";
+        }
+
+        if (radioButton.Pressed)
+        {
+            name += " pressed";
+        }
+
+        return name; 
+    }; 
+
+    for (let i = 0; i < 7; i++) 
+    {
+        const radioButtonPanel = new UIPanel(radioButtonsPanel);
+        radioButtonPanel.Color = CurrentTheme.AppMiddle;
+        radioButtonPanel.Layout = {
+            Width: Size.Grow,
+            Height: Size.Fit,
+            Flow: Flow.LeftRight,
+            AlignX: AlignX.Left,
+            ChildGap: 2,
+            Padding: 2,
+        };
+    
+        const radioButton = new RadioButton(radioButtonPanel, "testRadioButtons");
+        radioButton.Layout = {
+            Width: 10,
+            Height: 10,
+        };
+
+        const text = "radio " + (i + 1);
+
+        const radioButtonText = new TextUIPanel(radioButtonPanel, Fonts.Roboto_Regular, text);
+        radioButtonText.Layout = {
+            Scale: 5,
+            Width: Size.Grow,
+            Height: Size.Fit,
+            AlignX: AlignX.Left,
+        };
+      
+        radioButton.OnPressed.Add((pressed) => 
+        {
+            if (pressed)
+            {
+                radioButtonText.Text = text + getRadioButtonStateName(radioButton);
+            }
+            else
+            {
+                radioButtonText.Text = text + getRadioButtonStateName(radioButton);
+            }
+        });
+
+        radioButton.OnMouseEnter.Add(() => 
+        {
+            radioButtonText.Text = text + getRadioButtonStateName(radioButton);
+        });
+
+        radioButton.OnMouseLeave.Add(() => 
+        {
+            radioButtonText.Text = text + getRadioButtonStateName(radioButton);
+        });
+
+    }
+
+    return root;
 }
 
 Instance.OnRoundStart(() => 
