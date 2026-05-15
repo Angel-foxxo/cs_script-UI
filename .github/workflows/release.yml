@@ -1,0 +1,94 @@
+name: CI
+
+permissions:
+  contents: write
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build
+    runs-on: windows-latest
+
+    env:
+      NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Cache NuGet
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.NUGET_PACKAGES }}
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
+            nuget-
+
+      - name: Publish FontAtlasBuilder (AOT)
+        run: |
+          dotnet publish FontAtlasBuilder/FontAtlasBuilder.csproj `
+            --configuration Release `
+            --runtime win-x64 `
+            -p:StripSymbols=true `
+            --output FontAtlasBuilder/bin/publish
+
+      - name: Upload FontAtlasBuilder
+        uses: actions/upload-artifact@v4
+        with:
+          name: FontAtlasBuilder
+          path: |
+            FontAtlasBuilder/bin/publish/FontAtlasBuilder.exe
+            !**/*.pdb
+
+      - name: Upload content folders
+        uses: actions/upload-artifact@v4
+        with:
+          name: content
+          path: |
+            src/
+            materials/
+            particles/
+            models/
+            maps/
+            fonts/
+
+  release:
+    name: Create release
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Assemble release folder
+        run: |
+          mkdir -p release/FontAtlasBuilder
+          cp artifacts/FontAtlasBuilder/FontAtlasBuilder.exe release/FontAtlasBuilder/
+          cp -r artifacts/content/. release/
+
+      - name: Zip release
+        run: |
+          cd release
+          zip -9r ../csui-${{ github.ref_name }}.zip .
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: csui-${{ github.ref_name }}.zip
+          generate_release_notes: true
+          draft: true
