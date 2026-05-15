@@ -3,7 +3,6 @@ import { AlignX, AlignY, AnimationValueTypes, BaseUIPanel, Flow, InvisUIPanel, S
 import { Euler, Vec3 } from "@s2ze/math";
 import { Fonts } from "./font_definitions";
 import { Button, CurrentTheme, Orientation, RadioButton, Slider } from "./controls";
-import { Font } from "./font";
 
 Instance.ServerCommand("mp_warmup_offline_enabled 1");
 Instance.ServerCommand("mp_warmup_pausetimer 1");
@@ -93,7 +92,7 @@ function SpawnTestUI(parent: BaseUIPanel): UIPanel
             Padding: 2,
         };
 
-        const textPanel = new TextUIPanel(menuItemPanel, Fonts.Roboto_Regular, menuItems[i]);
+        const textPanel = new TextUIPanel(menuItemPanel, Fonts.Roboto_Regular, menuItems[i], "mainUIText");
         textPanel.Color = menuColors[i];
         textPanel.Layout = {
             Scale: 5,
@@ -152,13 +151,25 @@ function SpawnTestUIControPanel(parent: BaseUIPanel): UIPanel
     const root = new UIPanel(parent);
     root.Color = CurrentTheme.App;
     root.Layout = {
-        Width: 70,
+        Width: Size.Fit,
         Height: Size.Fit,
         AlignY: AlignY.Top,
         AlignX: AlignX.Left,
         Flow: Flow.TopBottom,
         Padding: 2,
         ChildGap: 2,
+    };
+
+    const radioButtonsText = new TextUIPanel(root, Fonts.Roboto_Regular, "Text Alignment");
+    radioButtonsText.Color = CurrentTheme.Contrast;
+    radioButtonsText.Layout = {
+        Width: Size.Fit,
+        Height: Size.Fit,
+        Flow: Flow.LeftRight,
+        AlignX: AlignX.Center,
+        AlignY: AlignY.Center,
+        ChildGap: 2,
+        Scale: 5,
     };
 
     const radioButtonsPanel = new InvisUIPanel(root);
@@ -172,24 +183,7 @@ function SpawnTestUIControPanel(parent: BaseUIPanel): UIPanel
         ChildGap: 2,
     };
 
-    function getRadioButtonStateName(radioButton: RadioButton): string
-    {
-        let name = "";
-
-        if (radioButton.AnyHovered)
-        {
-            name += " hovered";
-        }
-
-        if (radioButton.Pressed)
-        {
-            name += " pressed";
-        }
-
-        return name; 
-    }; 
-
-    for (let i = 0; i < 7; i++) 
+    for (let i = 0; i < 3; i++) 
     {
         const radioButtonPanel = new UIPanel(radioButtonsPanel);
         radioButtonPanel.Color = CurrentTheme.AppMiddle;
@@ -208,9 +202,7 @@ function SpawnTestUIControPanel(parent: BaseUIPanel): UIPanel
             Height: Size.Grow,
         };
 
-        const text = "radio " + (i + 1);
-
-        const radioButtonText = new TextUIPanel(radioButtonPanel, Fonts.Roboto_Regular, text);
+        const radioButtonText = new TextUIPanel(radioButtonPanel, Fonts.Roboto_Regular, AlignX[i].toString());
         radioButtonText.Layout = {
             Scale: 5,
             Width: Size.Grow,
@@ -222,24 +214,12 @@ function SpawnTestUIControPanel(parent: BaseUIPanel): UIPanel
         {
             if (pressed)
             {
-                radioButtonText.Text = text + getRadioButtonStateName(radioButton);
+                for (const text of radioButton.UI.GetPanels("mainUIText")) 
+                {
+                    text.Layout.AlignX = i;
+                }
             }
-            else
-            {
-                radioButtonText.Text = text + getRadioButtonStateName(radioButton);
-            }
         });
-
-        radioButton.OnMouseEnter.Add(() => 
-        {
-            radioButtonText.Text = text + getRadioButtonStateName(radioButton);
-        });
-
-        radioButton.OnMouseLeave.Add(() => 
-        {
-            radioButtonText.Text = text + getRadioButtonStateName(radioButton);
-        });
-
     }
 
     return root;

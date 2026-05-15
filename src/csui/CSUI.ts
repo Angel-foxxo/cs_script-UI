@@ -74,7 +74,7 @@ interface AxisHelper {
     acrossPaddingStart: number;
 }
 
-interface Transforms
+export interface Transforms
 { 
     Origin: Vec3, 
     Width: number, 

@@ -1,5 +1,5 @@
 import { Color, CSPlayerPawn, Instance } from "cs_script/point_script";
-import { AlignX, AlignY, AnimationValueTypes, Event, Flow, InvisUIPanel, Remap, Shape, Size, TextUIPanel, UIPanel } from "./CSUI";
+import { AlignX, AlignY, AnimationValueTypes, Event, Flow, InvisUIPanel, Remap, Shape, Size, TextUIPanel, Transforms, UIPanel } from "./CSUI";
 import { Fonts } from "./font_definitions";
 
 export const DEFAULT_FONT: Fonts = Fonts.Roboto_Regular;
@@ -47,6 +47,72 @@ export abstract class BaseControl extends InvisUIPanel
 {
     protected abstract _BasePanel: UIPanel;
 
+    protected _BaseColor: Color = CurrentTheme.Border;
+    protected _HoveredColor: Color = CurrentTheme.HoverAccent;
+    protected _ClickedColor: Color = CurrentTheme.Accent;
+
+    public get HoveredColor(): Color
+    {
+        return this._HoveredColor; 
+    }
+
+    public set HoveredColor(color: Color)
+    {
+        this._HoveredColor = color; 
+
+        if (this.AnyHovered && !this.AnyClicking)
+        {
+            this._BasePanel.Color = color;
+        }
+    }
+
+    public get ClickedColor(): Color
+    {
+        return this._ClickedColor; 
+    }
+
+    public set ClickedColor(color: Color)
+    {
+        this._ClickedColor = color; 
+
+        if (this.AnyClicking)
+        {
+            this._BasePanel.Color = color;
+        }
+    }
+
+    public get BaseColor(): Color
+    {
+        return this._BaseColor; 
+    }
+
+    public set BaseColor(color: Color)
+    {
+        this._BaseColor = color; 
+
+        if (!this.AnyClicking && !this.AnyHovered)
+        {
+            this._BasePanel.Color = color;
+        }
+    }
+
+    // hack to initialise basepanel color
+    private _BaseColorInitialized: boolean = false;
+    public override Think(parentWorldTransforms?: Transforms): void
+    {
+        if (!this._BaseColorInitialized)
+        {
+            this._BasePanel.Color = this._BaseColor;
+            this._BaseColorInitialized = true;
+        }
+        super.Think(parentWorldTransforms);
+    }
+
+    constructor(parent: UIPanel, name: string | undefined = undefined)
+    {
+        super(parent, name);
+    }
+
 }
 //////////////// BUTTON ////////////////
 
@@ -54,22 +120,7 @@ export class Button extends BaseControl
 {
     private _TextPanel: TextUIPanel;
     private _Text: string = "";
-    private _DefaultColor: Color = CurrentTheme.Border;
     protected _BasePanel: UIPanel;
-
-    public get DefaultColor(): Color 
-    {
-        return this._DefaultColor;
-    }
-
-    public set DefaultColor(color: Color)
-    {
-        this._DefaultColor = color;
-        this.Color = color;
-    }
-
-    public PressedColor: Color = CurrentTheme.Accent;
-    public HoveredColor: Color = CurrentTheme.HoverAccent;
 
     public get Text(): string
     {
@@ -102,7 +153,6 @@ export class Button extends BaseControl
         super(parent, name);
 
         this._BasePanel = new UIPanel(this, shape);
-        this._BasePanel.Color = this._DefaultColor;
         this._BasePanel.Layout = {
             Flow: Flow.TopBottom,
             Width: Size.Grow,
@@ -121,18 +171,18 @@ export class Button extends BaseControl
 
         this.OnMouseLeave.Add(() => 
         {
-            this._BasePanel.Animate(this.DefaultColor, 0.2, AnimationValueTypes.Color);
+            this._BasePanel.Animate(this.BaseColor, 0.2, AnimationValueTypes.Color);
 
         });
 
         this._BasePanel.OnMouseDown.Add(() => 
         {
-            this._BasePanel.Animate(this.PressedColor, 0.2, AnimationValueTypes.Color);
+            this._BasePanel.Animate(this.ClickedColor, 0.2, AnimationValueTypes.Color);
         });
 
         this._BasePanel.OnMouseUp.Add(() => 
         {
-            this._BasePanel.Animate(this.AnyHovered ? this.HoveredColor : this.DefaultColor, 0.2, AnimationValueTypes.Color);
+            this._BasePanel.Animate(this.AnyHovered ? this.HoveredColor : this.BaseColor, 0.2, AnimationValueTypes.Color);
         });
     }       
 
@@ -144,27 +194,10 @@ export class RadioButton extends BaseControl
 {
     private _DotPanel: UIPanel;
     protected _BasePanel: UIPanel;
-    private _DefaultColor: Color = CurrentTheme.Border;
     private _DotColor: Color = CurrentTheme.App;
-    private _DotPressedColor: Color = CurrentTheme.Accent;
     private _Pressed: boolean = false;
 
     public readonly OnPressed = new Event<[boolean]>();
-
-    public get DefaultColor(): Color 
-    {
-        return this._DefaultColor;
-    }
-
-    public set DefaultColor(color: Color)
-    {
-        this._DefaultColor = color;
-
-        if (!this.AnyHovered)
-        {
-            this._BasePanel.Color = this._DefaultColor;
-        }
-    }
 
     public get Pressed(): boolean 
     {
@@ -180,8 +213,8 @@ export class RadioButton extends BaseControl
 
         this._Pressed = pressed;
         this.OnPressed.Invoke(this.Pressed);
-        this._DotPanel.Animate(pressed ? this.DotPressedColor : this.DotColor, 0.6, AnimationValueTypes.Color);
-        this._BasePanel.Animate(this.Pressed ? this.HoveredColor : this.DefaultColor, 0.2, AnimationValueTypes.Color);
+        this._DotPanel.Animate(pressed ? this.ClickedColor : this.DotColor, 0.6, AnimationValueTypes.Color);
+        this._BasePanel.Animate(this.Pressed ? this.HoveredColor : this.BaseColor, 0.2, AnimationValueTypes.Color);
 
         if (this.Parent === undefined || pressed === false || this.Name === undefined) return;
         
@@ -205,34 +238,17 @@ export class RadioButton extends BaseControl
     {
         this._DotColor = color;
 
-        if (!this.Pressed)
+        if (!this.Pressed && !this.AnyHovered)
         {
             this._DotPanel.Color = color;
         }
     }
-
-    public get DotPressedColor(): Color 
-    {
-        return this._DotPressedColor;
-    }
-
-    public set DotPressedColor(color: Color)
-    {
-        this._DotPressedColor = color;
-        if (this.Pressed)
-        {
-            this._DotPanel.Color = color;
-        }
-    }
-
-    public HoveredColor: Color = CurrentTheme.HoverAccent;
 
     constructor(parent: UIPanel, name: string | undefined = undefined)
     {
         super(parent, name);
 
         this._BasePanel = new UIPanel(this, Shape.Elipse);
-        this._BasePanel.Color = this._DefaultColor;
         this._BasePanel.Layout = {
             Width: Size.Grow,
             Height: Size.Grow,
@@ -250,7 +266,7 @@ export class RadioButton extends BaseControl
 
         this._BasePanel.OnMouseLeave.Add(() => 
         {
-            this._BasePanel.Animate(this.Pressed ? this.HoveredColor : this.DefaultColor, 0.2, AnimationValueTypes.Color);
+            this._BasePanel.Animate(this.Pressed ? this.HoveredColor : this.BaseColor, 0.2, AnimationValueTypes.Color);
 
         });
 
@@ -308,8 +324,8 @@ export class Slider extends BaseControl
     private _SliderThickness: number = 1;
     private _KnobSize: number = 1;
     private _MouseT: number = 0;
-    private _KnobColor: Color = CurrentTheme.Accent;
-    private _SliderColor: Color = CurrentTheme.Border;
+    private _KnobColor: Color = CurrentTheme.Border;
+
     private _SliderLength = 10;
 
     private Orientation: Orientation;
@@ -353,18 +369,11 @@ export class Slider extends BaseControl
     public set KnobColor(color: Color)
     {
         this._KnobColor = color;
-        this._SliderKnob.Color = color;
-    }
 
-    public get SliderColor(): Color
-    {
-        return this._SliderColor; 
-    }
-
-    public set SliderColor(color: Color)
-    {
-        this._SliderColor = color;
-        this._BasePanel.Color = color;
+        if (!this.AnyHovered && !this.AnyClicking)
+        {
+            this._SliderKnob.Color = color;
+        }
     }
 
     public get MouseT(): number
@@ -434,7 +443,6 @@ export class Slider extends BaseControl
             this._BasePanel.Layout.Height = this.Layout.Height === Size.Fit ? this._SliderLength : Size.Grow;
             this._BasePanel.Layout.Width = this.SliderThickness;
         }
-       
     }
 
     constructor(parent: UIPanel, orientation: Orientation, name: string | undefined = undefined)
@@ -442,14 +450,11 @@ export class Slider extends BaseControl
         super(parent, name);
         this.Orientation = orientation;
         this.LockInput = true;
-
+        
         this.Layout.Width = this.Orientation === Orientation.Horizontal ? Size.Grow : Size.Fit;
         this.Layout.Height = this.Orientation === Orientation.Horizontal ? Size.Fit : Size.Grow;
 
-        this.LockInput = true;
-
         this._BasePanel = new UIPanel(this, Shape.Rect);
-        this._BasePanel.Color = this.SliderColor;
         this._BasePanel.Layout = { 
             Flow: this.Orientation === Orientation.Horizontal ? Flow.LeftRight : Flow.TopBottom,
             AlignX: this.Orientation === Orientation.Horizontal ? AlignX.Left : AlignX.Center,
@@ -468,6 +473,13 @@ export class Slider extends BaseControl
         this.OnMouseDown.Add((_, player) => 
         {
             this.CalculateMouseT(player);
+            this._SliderKnob.Animate(this.ClickedColor, 0.2, AnimationValueTypes.Color);
+        });
+
+        this.OnMouseUp.Add((_, player) => 
+        {
+            this.CalculateMouseT(player);
+            this._SliderKnob.Animate(this.AnyHovered ? this.HoveredColor : this.KnobColor, 0.2, AnimationValueTypes.Color);
         });
 
         this.OnMouseMoved.Add((_, player) => 
@@ -475,6 +487,19 @@ export class Slider extends BaseControl
             this.CalculateMouseT(player);
         });
 
+        this.OnMouseEnter.Add(() => 
+        {
+            this._SliderKnob.Animate(this.HoveredColor, 0.2, AnimationValueTypes.Color);
+            this._BasePanel.Animate(this.HoveredColor, 0.2, AnimationValueTypes.Color);
+
+        });
+
+        this.OnMouseLeave.Add(() => 
+        {
+            this._SliderKnob.Animate(this.KnobColor, 0.2, AnimationValueTypes.Color);
+            this._BasePanel.Animate(this.BaseColor, 0.2, AnimationValueTypes.Color);
+        });
+       
         this.OnThink.Add(() => 
         {
             this._SliderKnob.Layout.Width = this.GetKnobRadius();
