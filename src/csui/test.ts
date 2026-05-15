@@ -1,3 +1,5 @@
+/*! Copyright (C) 2026 Angel Cazacu - Licensed under the GNU General Public License v3 or later. See <https://www.gnu.org/licenses/> for details. */
+
 import { Instance } from "cs_script/point_script";
 import { AlignX, AlignY, AnimationValueTypes, BaseUIPanel, Flow, InvisUIPanel, Shape, Size, TextUIPanel, UI, UIPanel, UISetDebug } from "./CSUI";
 import { Euler, Vec3 } from "@s2ze/math";

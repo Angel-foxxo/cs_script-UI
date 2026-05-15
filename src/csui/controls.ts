@@ -1,4 +1,4 @@
-import { Color, CSPlayerPawn, Instance } from "cs_script/point_script";
+import { Color, CSPlayerPawn } from "cs_script/point_script";
 import { AlignX, AlignY, AnimationValueTypes, Event, Flow, InvisUIPanel, Remap, Shape, Size, TextUIPanel, Transforms, UIPanel } from "./CSUI";
 import { Fonts } from "./font_definitions";
 
