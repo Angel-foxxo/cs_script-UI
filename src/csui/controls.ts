@@ -234,7 +234,6 @@ export class RadioButton extends BaseControl
         this._BasePanel = new UIPanel(this, Shape.Elipse);
         this._BasePanel.Color = this._DefaultColor;
         this._BasePanel.Layout = {
-            Padding: 2,
             Width: Size.Grow,
             Height: Size.Grow,
         };
@@ -262,6 +261,32 @@ export class RadioButton extends BaseControl
         this.OnMouseUp.Add(() => 
         {
             this.Pressed = !this.Pressed;
+        });
+
+        this.OnThink.Add((_, transforms) => 
+        {
+            if (transforms.Width > transforms.Height)
+            {
+                this._BasePanel.Layout.Width = transforms.Height;
+                this._BasePanel.Layout.Height = Size.Grow;
+
+            }
+            else if (transforms.Width < transforms.Height)
+            {
+                this._BasePanel.Layout.Height = transforms.Width;
+                this._BasePanel.Layout.Width = Size.Grow;
+            }
+            else
+            {
+                this._BasePanel.Layout.Width = Size.Grow;
+                this._BasePanel.Layout.Height = Size.Grow;
+            }
+        });
+
+        this._BasePanel.OnThink.Add((_, transforms) => 
+        {
+            this._DotPanel.Layout.Width = transforms.Height * 0.6;
+            this._DotPanel.Layout.Height = transforms.Height * 0.6;
         });
     }       
 

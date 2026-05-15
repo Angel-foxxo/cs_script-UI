@@ -35,7 +35,7 @@ function SpawnUI()
     TestUI.AddPlayer(Instance.GetPlayerController(0)!.GetPlayerPawn()!);
     TestUI.Brightness = 2;
     TestUI.AlignX = AlignX.Center;
-    TestUI.AlignY = AlignY.Center;
+    TestUI.AlignY = AlignY.Top;
     TestUI.Origin = new Vec3(TestUITarget.GetAbsOrigin());
     TestUI.Angles = new Euler(TestUITarget.GetAbsAngles());
 
@@ -45,6 +45,7 @@ function SpawnUI()
         Width: Size.Fit,
         Height: Size.Fit,
         Flow: Flow.LeftRight,
+        AlignY: AlignY.Top,
         Padding: 2,
         ChildGap: 10,
     };
@@ -73,6 +74,7 @@ function SpawnTestUI(parent: BaseUIPanel): UIPanel
         Width: 140,
         Height: Size.Fit,
         Flow: Flow.TopBottom,
+        AlignY: AlignY.Top,
         Padding: 2,
         ChildGap: 2,
     };
@@ -151,7 +153,7 @@ function SpawnTestUIControPanel(parent: BaseUIPanel): UIPanel
     root.Color = CurrentTheme.App;
     root.Layout = {
         Width: 70,
-        Height: Size.Grow,
+        Height: Size.Fit,
         AlignY: AlignY.Top,
         AlignX: AlignX.Left,
         Flow: Flow.TopBottom,
@@ -166,6 +168,7 @@ function SpawnTestUIControPanel(parent: BaseUIPanel): UIPanel
         Height: Size.Fit,
         Flow: Flow.TopBottom,
         AlignX: AlignX.Left,
+        AlignY: AlignY.Top,
         ChildGap: 2,
     };
 
@@ -201,8 +204,8 @@ function SpawnTestUIControPanel(parent: BaseUIPanel): UIPanel
     
         const radioButton = new RadioButton(radioButtonPanel, "testRadioButtons");
         radioButton.Layout = {
-            Width: 10,
-            Height: 10,
+            Width: 6,
+            Height: Size.Grow,
         };
 
         const text = "radio " + (i + 1);
