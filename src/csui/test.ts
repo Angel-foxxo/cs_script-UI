@@ -52,7 +52,7 @@ function SpawnUI()
     };
 
     SpawnTestUI(root);
-    SpawnTestUIControPanel(root);
+    SpawnTestUIControlPanel(root);
 }
 
 function SpawnTestUI(parent: BaseUIPanel): UIPanel
@@ -148,7 +148,7 @@ function SpawnTestUI(parent: BaseUIPanel): UIPanel
     return root;
 }
 
-function SpawnTestUIControPanel(parent: BaseUIPanel): UIPanel
+function SpawnTestUIControlPanel(parent: BaseUIPanel): UIPanel
 {
     const root = new UIPanel(parent);
     root.Color = CurrentTheme.App;
@@ -229,7 +229,6 @@ function SpawnTestUIControPanel(parent: BaseUIPanel): UIPanel
             Scale: 5,
             Width: Size.Grow,
             Height: Size.Fit,
-            AlignX: AlignX.Relative(0.5),
         };
 
         if (i === 1)

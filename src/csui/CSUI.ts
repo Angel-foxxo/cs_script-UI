@@ -729,14 +729,17 @@ export abstract class BaseUIPanel
             return;
         }
 
+        // skip out of flow children (relative or absolute positioning)
+        const inFlowChildren = this.Children.filter(c => !IsOutOfFlow(c));
+
         // total child gap is related to the fence post problem, where total amount of child gap is the amount of children - 1
         // we can begin with this because it wont change based on anything but child count, which we already know
-        let alongContentSize = Math.max(this.Children.length - 1, 0) * gap;
+        let alongContentSize = Math.max(inFlowChildren.length - 1, 0) * gap;
         let acrossContentSize = 0;
 
         const horizontal = this.Layout.Flow === Flow.LeftRight;
         
-        for (const child of this.Children)
+        for (const child of inFlowChildren)
         {
             // grow children dont contribute to sizing right now, DistributeGrow pass will assign their size later
 
@@ -758,7 +761,7 @@ export abstract class BaseUIPanel
             }
         }
 
-        if (axisHelper.alongSizeType === Size.Fit && this.Children.some(c => horizontal ? c.Layout.Width === Size.Grow : c.Layout.Height === Size.Grow))
+        if (axisHelper.alongSizeType === Size.Fit && inFlowChildren.some(c => horizontal ? c.Layout.Width === Size.Grow : c.Layout.Height === Size.Grow))
         {
             Instance.Msg("UI: GROW children inside a FIT parent have no space to grow into");
         }
@@ -789,11 +792,14 @@ export abstract class BaseUIPanel
 
         const acrossInterior = axisHelper.acrossSize() - axisHelper.acrossPadding;
 
-        // along axis: collect grow children and size taken up by children, then distribute remaining space
-        let alongFixed = Math.max(this.Children.length - 1, 0) * (this.Layout.ChildGap ?? 0);
+        // skip out of flow children (relative or absolute positioning)
+        const inFlowChildren = this.Children.filter(c => !IsOutOfFlow(c));
+
+        // along axis: collect grow children and size taken up by fixed children, then distribute remaining space
+        let alongFixed = Math.max(inFlowChildren.length - 1, 0) * (this.Layout.ChildGap ?? 0);
         const growChildren: BaseUIPanel[] = [];
         
-        for (const child of this.Children)
+        for (const child of inFlowChildren)
         {
             const childAlongSizeType = horizontal ? child.Layout.Width : child.Layout.Height;
             if (childAlongSizeType === Size.Grow)
@@ -820,7 +826,7 @@ export abstract class BaseUIPanel
         }
         
         // cross axis: grow children simply fill the available interior space
-        for (const child of this.Children)
+        for (const child of inFlowChildren)
         {
             const childCrossSizeType = horizontal ? child.Layout.Height : child.Layout.Width;
             if (childCrossSizeType === Size.Grow)
@@ -849,11 +855,14 @@ export abstract class BaseUIPanel
         const horizontal = this.Layout.Flow === Flow.LeftRight;
         const gap = this.Layout.ChildGap ?? 0;
 
+        // skip out of flow children (relative or absolute positioning)
+        const inFlowChildren = this.Children.filter(c => !IsOutOfFlow(c));
+
         // measure total child content size along and across the flow axis, including gaps between children (fence post: n-1 gaps for n children)
-        let alongContent = Math.max(this.Children.length - 1, 0) * gap;
+        let alongContent = Math.max(inFlowChildren.length - 1, 0) * gap;
         let crossContent = 0;
 
-        for (const child of this.Children) 
+        for (const child of inFlowChildren) 
         {
             alongContent += horizontal ? child.LayoutTransforms.Width : child.LayoutTransforms.Height;
             crossContent = Math.max(crossContent, horizontal ? child.LayoutTransforms.Height : child.LayoutTransforms.Width);
@@ -890,7 +899,7 @@ export abstract class BaseUIPanel
         }
 
         // position each child, advancing the 'along' cursor by child size + gap after each
-        for (const child of this.Children) 
+        for (const child of inFlowChildren) 
         {
             const childAlong = horizontal ? child.LayoutTransforms.Width : child.LayoutTransforms.Height;
             const childCross = horizontal ? child.LayoutTransforms.Height : child.LayoutTransforms.Width;
@@ -931,6 +940,46 @@ export abstract class BaseUIPanel
             child.PositionPanel(childX, childY);
 
             alongOffset += childAlong + gap;
+        }
+
+        // out of layout pass for absolute and relative positioning
+        for (const child of this.Children)
+        {
+            if (!IsOutOfFlow(child)) continue;
+
+            const ax = child.Layout.AlignX;
+            const ay = child.Layout.AlignY;
+
+            let childX: number = 0;
+            let childY: number = 0;
+
+            if (typeof ax === "object")
+            {
+                if (ax.type === "Absolute")
+                {
+                    childX = ax.value;
+                }
+
+                if (ax.type === "Relative")
+                {
+                    childX = ax.value * this.LayoutTransforms.Width;
+                }
+            }
+
+            if (typeof ay === "object")
+            {
+                if (ay.type === "Absolute")
+                {
+                    childY = ay.value;
+                }
+
+                if (ay.type === "Relative")
+                {
+                    childY = ay.value * this.LayoutTransforms.Height;
+                }
+            }
+
+            child.PositionPanel(childX, childY);
         }
     }
 
@@ -1545,6 +1594,17 @@ function GetPadding(padding: Layout["Padding"]): { pL: number, pR: number, pT: n
         pT: typeof padding === "number" ? padding : (padding?.top ?? 0),
         pB: typeof padding === "number" ? padding : (padding?.bottom ?? 0),
     };
+}
+
+function IsOutOfFlow(child: BaseUIPanel): boolean
+{
+    if (typeof child.Layout.AlignX === "object" && (child.Layout.AlignX.type === "Relative" || child.Layout.AlignX.type === "Absolute")) 
+        return true;
+    
+    if (typeof child.Layout.AlignY === "object" && (child.Layout.AlignY.type === "Relative" || child.Layout.AlignY.type === "Absolute")) 
+        return true;
+
+    return false;
 }
 
 // https://unicode-explorer.com/articles/space-characters
