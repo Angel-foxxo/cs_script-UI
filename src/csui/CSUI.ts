@@ -1,5 +1,19 @@
-// Inspired by the Clay UI library
-// https://github.com/nicbarker/clay
+/*!
+*   cs_script UI - this code adds an in-world user interface system to Counter-Strike 2.
+* 
+*   Copyright (C) 2026 Angel Cazacu
+* 
+*   Inspired by the Clay UI library: https://github.com/nicbarker/clay
+* 
+*   Contact:
+*     GitHub:   https://github.com/Angel-foxxo
+*     Website:  https://angelcazacu.com/
+*     Discord:  anngell8
+*     Email:    angelcazacu8@gmail.com
+*
+*   Licensed under the GNU General Public License v3 or later.
+*   See <https://www.gnu.org/licenses/> for details.
+*/
 
 import { Euler, Vec3 } from "@s2ze/math";
 import { BaseModelEntity, Color, CSInputs, CSPlayerPawn, Entity, Instance, PointTemplate } from "cs_script/point_script";
@@ -18,30 +32,42 @@ export function UISetDebug(debug: boolean)
 
 interface Layout
 {
-    Width: Size | number;
-    Height: Size | number;
+    Width: SizeType;
+    Height: SizeType;
     Scale?: number,
     VisualScale?: number,
     Flow?: Flow;
     Padding?: { left?: number, right?: number, top?: number, bottom?: number } | number,
     ChildGap?: number,
-    AlignX?: AlignX,
-    AlignY?: AlignY,
+    AlignX: AlignXType,
+    AlignY: AlignYType,
 }
 
-export enum AlignX
-{
-    Left,
-    Center,
-    Right,
-}
+export const AlignX = {
+    Left: "Left",
+    Center: "Center",
+    Right: "Right",
+    Relative: (value: number) => ({ type: "Relative" as const, value }),
+    Absolute: (value: number) => ({ type: "Absolute" as const, value }),
+} as const;
 
-export enum AlignY
-{
-    Top,
-    Center,
-    Bottom,
-}
+export type AlignXType =
+    | Exclude<(typeof AlignX)[keyof typeof AlignX], (...args: never[]) => unknown>
+    | ReturnType<typeof AlignX.Relative>
+    | ReturnType<typeof AlignX.Absolute>;
+
+export const AlignY = {
+    Top: "Top",
+    Center: "Center",
+    Bottom: "Bottom",
+    Relative: (value: number) => ({ type: "Relative" as const, value }),
+    Absolute: (value: number) => ({ type: "Absolute" as const, value }),
+} as const;
+
+export type AlignYType =
+    | Exclude<(typeof AlignY)[keyof typeof AlignY], (...args: never[]) => unknown>
+    | ReturnType<typeof AlignY.Relative>
+    | ReturnType<typeof AlignY.Absolute>;
 
 export enum Shape
 {
@@ -49,11 +75,12 @@ export enum Shape
     Elipse,
 }
 
-export enum Size
-{
-    Fit = "Fit",
-    Grow = "Grow",
-}
+export const Size = {
+    Fit: "Fit",
+    Grow: "Grow",
+} as const;
+
+export type SizeType = (typeof Size)[keyof typeof Size] | number;
 
 export enum Flow
 {
@@ -66,8 +93,8 @@ interface AxisHelper {
     acrossSize(): number;
     setAlong(v: number): void;
     setAcross(v: number): void;
-    alongSizeType: Size | number;
-    acrossSizeType: Size | number;
+    alongSizeType: SizeType | number;
+    acrossSizeType: SizeType | number;
     alongPadding: number;
     acrossPadding: number;
     alongPaddingStart: number;
@@ -141,8 +168,8 @@ export class UI
     public Angles: Euler = Euler.Zero;
     public Scale: number = 1;
     public Brightness: number = 1;
-    public AlignX: AlignX = AlignX.Left;
-    public AlignY: AlignY = AlignY.Top;
+    public AlignX: AlignXType = AlignX.Left;
+    public AlignY: AlignYType = AlignY.Top;
 
     private readonly _Players: Map<CSPlayerPawn, PlayerState> = new Map();
     public get Players(): ReadonlyMap<CSPlayerPawn, PlayerState>
@@ -502,7 +529,7 @@ export abstract class BaseUIPanel
         this._AxisHelper = undefined;
 
         // if we have no parent (we are root)
-        // set off the two recursive calls that will measure and position the entire UI
+        // set off the recursive calls that will measure and position the entire UI
         if (this.Parent === undefined)
         {
             this.MeasurePanel();
@@ -837,15 +864,29 @@ export abstract class BaseUIPanel
         const crossInner = axisHelper.acrossSize() - axisHelper.acrossPadding;
 
         // compute starting offset along the flow axis based on alignment, shifting children into the center or end of the available interior space
-        const alongAlignment = horizontal ? (this.Layout.AlignX ?? AlignX.Left) : (this.Layout.AlignY ?? AlignY.Top);
         let alongOffset = axisHelper.alongPaddingStart;
-        if (alongAlignment === AlignX.Center || alongAlignment === AlignY.Center) 
+
+        if (horizontal)
         {
-            alongOffset += (alongInner - alongContent) / 2;
+            if (this.Layout.AlignX === AlignX.Center) 
+            {
+                alongOffset += (alongInner - alongContent) / 2;
+            }
+            else if (this.Layout.AlignX === AlignX.Right) 
+            {
+                alongOffset += (alongInner - alongContent);
+            }
         }
-        else if (alongAlignment === AlignX.Right || alongAlignment === AlignY.Bottom) 
+        else
         {
-            alongOffset += (alongInner - alongContent);
+            if (this.Layout.AlignY === AlignY.Center) 
+            {
+                alongOffset += (alongInner - alongContent) / 2;
+            }
+            else if (this.Layout.AlignY === AlignY.Bottom) 
+            {
+                alongOffset += (alongInner - alongContent);
+            }
         }
 
         // position each child, advancing the 'along' cursor by child size + gap after each
@@ -855,15 +896,33 @@ export abstract class BaseUIPanel
             const childCross = horizontal ? child.LayoutTransforms.Height : child.LayoutTransforms.Width;
 
             // each child is independently aligned on the cross axis
-            const crossAlignment = horizontal ? (this.Layout.AlignY ?? AlignY.Top) : (this.Layout.AlignX ?? AlignX.Left);
             let crossOffset = axisHelper.acrossPaddingStart;
-            if (crossAlignment === AlignY.Center || crossAlignment === AlignX.Center) 
+
+            if (horizontal)
             {
-                crossOffset += (crossInner - childCross) / 2;
-            }
-            else if (crossAlignment === AlignY.Bottom || crossAlignment === AlignX.Right) 
+                const crossAlignment = this.Layout.AlignY; 
+
+                if (crossAlignment === AlignY.Center) 
+                {
+                    crossOffset += (crossInner - childCross) / 2;
+                }
+                else if (crossAlignment === AlignY.Bottom) 
+                {
+                    crossOffset += (crossInner - childCross);
+                }
+            } 
+            else
             {
-                crossOffset += (crossInner - childCross);
+                const crossAlignment = this.Layout.AlignX; 
+
+                if (crossAlignment === AlignX.Center) 
+                {
+                    crossOffset += (crossInner - childCross) / 2;
+                }
+                else if (crossAlignment === AlignX.Right) 
+                {
+                    crossOffset += (crossInner - childCross);
+                }
             }
 
             const childX = (horizontal ? alongOffset : crossOffset);

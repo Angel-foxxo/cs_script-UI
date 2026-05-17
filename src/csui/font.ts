@@ -1,3 +1,5 @@
+/*! Copyright (C) 2026 Angel Cazacu - Licensed under the GNU General Public License v3 or later. See <https://www.gnu.org/licenses/> for details. */
+
 import { GetGlyphIndex } from "./font_definitions";
 
 export interface GlyphMetrics {

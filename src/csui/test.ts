@@ -1,7 +1,7 @@
 /*! Copyright (C) 2026 Angel Cazacu - Licensed under the GNU General Public License v3 or later. See <https://www.gnu.org/licenses/> for details. */
 
 import { Instance } from "cs_script/point_script";
-import { AlignX, AlignY, AnimationValueTypes, BaseUIPanel, Flow, InvisUIPanel, Shape, Size, TextUIPanel, UI, UIPanel, UISetDebug } from "./CSUI";
+import { AlignX, AlignXType, AlignY, AnimationValueTypes, BaseUIPanel, Flow, InvisUIPanel, Shape, Size, TextUIPanel, UI, UIPanel, UISetDebug } from "./CSUI";
 import { Euler, Vec3 } from "@s2ze/math";
 import { Fonts } from "./font_definitions";
 import { Button, CurrentTheme, Orientation, RadioButton, Slider } from "./controls";
@@ -73,7 +73,7 @@ function SpawnTestUI(parent: BaseUIPanel): UIPanel
     root.Color = CurrentTheme.App;
     root.Layout = {
         Width: 140,
-        Height: Size.Fit,
+        Height: "Fit",
         Flow: Flow.TopBottom,
         AlignY: AlignY.Top,
         Padding: 2,
@@ -204,21 +204,46 @@ function SpawnTestUIControPanel(parent: BaseUIPanel): UIPanel
             Height: Size.Grow,
         };
 
-        const radioButtonText = new TextUIPanel(radioButtonPanel, Fonts.Roboto_Regular, AlignX[i].toString());
+        let alignX: AlignXType = AlignX.Center;
+
+        switch (i) 
+        {
+            case 0:
+                alignX = AlignX.Left;
+                break;
+
+            case 1:
+                alignX = AlignX.Center;
+                break;
+
+            case 2:
+                alignX = AlignX.Right;
+                break;
+        
+            default:
+                break;
+        }
+
+        const radioButtonText = new TextUIPanel(radioButtonPanel, Fonts.Roboto_Regular, alignX);
         radioButtonText.Layout = {
             Scale: 5,
             Width: Size.Grow,
             Height: Size.Fit,
-            AlignX: AlignX.Left,
+            AlignX: AlignX.Relative(0.5),
         };
-      
+
+        if (i === 1)
+        {
+            radioButton.Pressed = true;    
+        }
+
         radioButton.OnPressed.Add((pressed) => 
         {
             if (pressed)
             {
                 for (const text of radioButton.UI.GetPanels("mainUIText")) 
                 {
-                    text.Layout.AlignX = i;
+                    text.Layout.AlignX = alignX;
                 }
             }
         });

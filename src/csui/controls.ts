@@ -1,3 +1,5 @@
+/*! Copyright (C) 2026 Angel Cazacu - Licensed under the GNU General Public License v3 or later. See <https://www.gnu.org/licenses/> for details. */
+
 import { Color, CSPlayerPawn } from "cs_script/point_script";
 import { AlignX, AlignY, AnimationValueTypes, Event, Flow, InvisUIPanel, Remap, Shape, Size, TextUIPanel, Transforms, UIPanel } from "./CSUI";
 import { Fonts } from "./font_definitions";
@@ -38,7 +40,7 @@ const DarkTheme: ThemeColors = {
 
     HoverAccent: { r:0, g:66, b:151, a:255 },
     Accent: { r:99, g:161, b:255, a:255 },
-};
+} as const;
 
 export const CurrentTheme: ThemeColors = DarkTheme;
 
