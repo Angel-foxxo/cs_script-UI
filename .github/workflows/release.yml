@@ -19,15 +19,15 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: "10.0.x"
 
       - name: Cache NuGet
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ env.NUGET_PACKAGES }}
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
@@ -44,7 +44,7 @@ jobs:
             --output FontAtlasBuilder/bin/publish
 
       - name: Upload FontAtlasBuilder
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: FontAtlasBuilder
           path: |
@@ -52,7 +52,7 @@ jobs:
             !**/*.pdb
 
       - name: Upload content folders
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: content
           path: |
@@ -71,7 +71,7 @@ jobs:
 
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           path: artifacts
 
@@ -90,5 +90,5 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: csui-${{ github.ref_name }}.zip
-          generate_release_notes: true
+          generate_release_notes: false
           draft: true
