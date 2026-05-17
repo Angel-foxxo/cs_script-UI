@@ -84,7 +84,7 @@ jobs:
       - name: Zip release
         run: |
           cd release
-          zip -9r ../csui-${{ github.ref_name }}.zip .
+          zip -9r ../cs_script-UI-${{ github.ref_name }}.zip .
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
