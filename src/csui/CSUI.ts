@@ -14,6 +14,7 @@
 *   Licensed under the GNU General Public License v3 or later.
 *   See <https://www.gnu.org/licenses/> for details.
 */
+export const VERSION = "v1.0.0";
 
 import { Euler, Vec3 } from "@s2ze/math";
 import { BaseModelEntity, Color, CSInputs, CSPlayerPawn, Entity, Instance, PointTemplate } from "cs_script/point_script";
