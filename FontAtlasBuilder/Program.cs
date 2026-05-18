@@ -34,10 +34,27 @@ static class FontAtlasGenerator
 
     static void Main(string[] args)
     {
+        try
+        {
+            MainMethod(args);
+        }
+        catch (Exception ex)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"\nError: {ex.Message}");
+            Console.ResetColor();
+        }
+        finally
+        {
+            Console.WriteLine("\nPress any key to exit...");
+            Console.ReadKey();
+        }
+    }
+
+    static void MainMethod(string[] args)
+    {
         Console.WriteLine($"Font Atlas Generator {VERSION}");
         Console.WriteLine("Reads a TrueType/OpenType font file and produces all the required files for using this in engine and with typescript");
-
-        Console.WriteLine($"\n======================== BUILDING FONTS ========================\n");
 
         string mainChars = DefaultChars;
 
@@ -51,6 +68,8 @@ static class FontAtlasGenerator
 
         string charset = GetCharset(mainChars);
         string addonPath = GetAddonContentFolder().FullName;
+
+        Console.WriteLine($"\n======================== BUILDING FONTS ========================\n");
 
         Console.WriteLine($"Addon Path: {addonPath}\n");
 
@@ -343,6 +362,6 @@ static class FontAtlasGenerator
             dir = dir.Parent;
         }
 
-        throw new InvalidOperationException("Could not find addon name: no 'game/csgo_addons/<addonName>' segment found in path.");
+        throw new InvalidOperationException("Could not find addon name: no 'game/csgo_addons/<addonName>' segment found in path. Make sure this program is placed inside of a CS2 addon.");
     }
 }
