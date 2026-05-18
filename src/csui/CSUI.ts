@@ -21,42 +21,54 @@ import { Font } from "./font";
 import { Fonts, FontsMap, GetGlyphIndex } from "./font_definitions";
 import { Lab, OklabToSrgb, SrgbToOklab } from "./oklab";
 
-const ANIM_EPS = 0.001;
-const PANEL_Z_INCREMENT: number = 0.1;
+const ANIM_EPS = 0.001; // epsilon for animation interpolation
+const PANEL_Z_INCREMENT: number = 0.1; // panel overlap increment 
 
-let Debug = false;
+let DEBUG = false;
 
+/** Enables debug only logs and panel bounds outlines */
 export function UISetDebug(debug: boolean)
 {
-    Debug = debug;
+    DEBUG = debug;
 }
 
+// main layout object
 interface Layout
 {
     Width: SizeType;
     Height: SizeType;
-    Scale?: number,
-    VisualScale?: number,
-    Flow?: Flow;
-    Padding?: { left?: number, right?: number, top?: number, bottom?: number } | number,
-    ChildGap?: number,
     AlignX: AlignXType,
     AlignY: AlignYType,
+    Flow?: Flow;
+    ChildGap?: number,
+    Padding?: { left?: number, right?: number, top?: number, bottom?: number } | number,
+    Scale?: number,
+    VisualScale?: number,
 }
 
-export const AlignX = {
-    Left: "Left",
-    Center: "Center",
-    Right: "Right",
-    Relative: (value: number) => ({ type: "Relative" as const, value }),
-    Absolute: (value: number) => ({ type: "Absolute" as const, value }),
+export const Size = {
+    Fit: "Fit",
+    Grow: "Grow",
 } as const;
 
-export type AlignXType =
-    | Exclude<(typeof AlignX)[keyof typeof AlignX], (...args: never[]) => unknown>
-    | ReturnType<typeof AlignX.Relative>
-    | ReturnType<typeof AlignX.Absolute>;
+/**
+ * How the layout system will try to size this panel.
+ * 
+ * - Fit - Will fit the sizes of its contents.
+ * - Grow - Will grow as much as it can inside its parent.
+ * - number - Sets a fixed size.
+ */
+export type SizeType = (typeof Size)[keyof typeof Size] | number;
 
+/**
+ * Y axis alignment of a UI panel, alignment takes into account the bounds of the child and parent.
+ * 
+ * - Top - Align to the top edge of the parent.
+ * - Center - Align to the center of the parent.
+ * - Bottom - Align to the bottom edge of the parent.
+ * - Relative(value: number) - Excludes this panel from the layouting system, value maps 0 = top edge, 1 = bottom edge. 
+ * - Absolute(value: number) - Excludes this panel from the layouting system, value is a world unit offset from the top edge.
+ */
 export const AlignY = {
     Top: "Top",
     Center: "Center",
@@ -65,30 +77,143 @@ export const AlignY = {
     Absolute: (value: number) => ({ type: "Absolute" as const, value }),
 } as const;
 
+/**
+ * The type of {@link AlignY} values.
+ * See {@link AlignY} for field descriptions.
+ */
 export type AlignYType =
     | Exclude<(typeof AlignY)[keyof typeof AlignY], (...args: never[]) => unknown>
     | ReturnType<typeof AlignY.Relative>
     | ReturnType<typeof AlignY.Absolute>;
 
-export enum Shape
-{
-    Rect,
-    Elipse,
-}
-
-export const Size = {
-    Fit: "Fit",
-    Grow: "Grow",
+/**
+ * X axis alignment of a UI panel, alignment takes into account the bounds of the child and parent.
+ * 
+ * - Left - Align to the left edge of the parent.
+ * - Center - Align to the center of the parent.
+ * - Right - Align to the right edge of the parent.
+ * - Relative(value: number) - Excludes this panel from the layouting system, value maps 0 = left edge, 1 = right edge. 
+ * - Absolute(value: number) - Excludes this panel from the layouting system, value is a world unit offset from the left edge.
+ */
+export const AlignX = {
+    Left: "Left",
+    Center: "Center",
+    Right: "Right",
+    Relative: (value: number) => ({ type: "Relative" as const, value }),
+    Absolute: (value: number) => ({ type: "Absolute" as const, value }),
 } as const;
 
-export type SizeType = (typeof Size)[keyof typeof Size] | number;
+/**
+ * The type of {@link AlignX} values.
+ * See {@link AlignX} for field descriptions.
+ */
+export type AlignXType =
+    | Exclude<(typeof AlignX)[keyof typeof AlignX], (...args: never[]) => unknown>
+    | ReturnType<typeof AlignX.Relative>
+    | ReturnType<typeof AlignX.Absolute>;
 
+/**
+ * The direction of the layout axis, child elements will be placed next to eachother along the axis.
+ * 
+ * - TopBottom - Aligns from the top edge to the bottom edge.
+ * - LeftRight - Aligns from the left edge to the right edge.
+ */
 export enum Flow
 {
     TopBottom,
     LeftRight,
 }
 
+/**
+ * In world panel rendered look
+ * 
+ * - Rect - Makes the panel render as a rectangle.
+ * - Ellipse - Makes the panel render as an ellipse.
+ */
+export enum Shape
+{
+    Rect,
+    Ellipse,
+}
+
+/**
+ * An object representing panel transforms used for transforms after layouting which are not quite world space yet,
+ * and fully world space transforms.
+ * 
+ * Angles are not stored because they will always be the same as UI.Angles
+ */
+export interface Transforms
+{ 
+    Origin: Vec3, 
+    Width: number, 
+    Height: number, 
+    Z?: number
+}
+
+/**
+ *  An event, events can have any number of listening callbacks, when invoked the callbacks will be run 
+ *  in the order they were added.
+ */
+export class Event<TArgs extends unknown[]>
+{
+    private _callbacks: ((...args: TArgs) => void)[] = [];
+
+    /**
+     * Adds a new callback.
+     * 
+     * - cb - Callback function
+     */
+    public Add(cb: (...args: TArgs) => void): void
+    {
+        this._callbacks.push(cb);
+    }
+
+    /**
+     * Runs all callback functions.
+     * 
+     * - args - Callback function args
+     */
+    public Invoke(...args: TArgs): void
+    {
+        for (const cb of this._callbacks)
+        {
+            cb(...args);
+        }
+    }
+}
+
+/**
+ * Animatable panel properties
+ * 
+ * - Color - Interpolates from one color to another using the OKLab color space for smoother blending.  
+ * - Alpha - Interpolates panel transparency.
+ * - Scale - Interpolates real panel scale, the layouting system will recalculate accordingly.
+ * - VisualScale - Interpolates visuals only scale, the layouting system is blind to this.
+ * - Width - Interpolates panel width, the layout system will recalculate accordingly.
+ * - Height - Interpolates panel height, the layout system will recalculate accordingly.
+ */
+export enum AnimationValueTypes
+{
+    Color,
+    Alpha,
+    Scale,
+    VisualScale,
+    Width,
+    Height,
+}
+
+// variable types that animations can interpolate
+type AnimationTypes = number | Vec3 | Color;
+
+// a panel property animation
+interface Animation<AnimationValues> 
+{
+    target: AnimationValues;
+    speed: number;
+    type: AnimationValueTypes;
+}
+
+// helps with computing layout along or across the layout axis without having to manually deal with the x/y conversions
 interface AxisHelper {
     alongSize(): number;
     acrossSize(): number;
@@ -102,39 +227,14 @@ interface AxisHelper {
     acrossPaddingStart: number;
 }
 
-export interface Transforms
-{ 
-    Origin: Vec3, 
-    Width: number, 
-    Height: number, 
-    Z?: number
-}
-
-type AnimationValues = number | Vec3 | Color;
-
-export enum AnimationValueTypes
-{
-    Color,
-    Alpha,
-    Scale,
-    VisualScale,
-    Width,
-    Height,
-}
-
-interface Animation<AnimationValues> 
-{
-    target: AnimationValues;
-    speed: number;
-    type: AnimationValueTypes;
-}
-
+// UI wide per player state
 interface PlayerState
 {
     isClicking: boolean;
     clickingChanged: boolean;
 }
 
+// panel specific per player state
 interface PlayerInteraction
 {
     HoveredBy: Set<CSPlayerPawn>,
@@ -142,80 +242,40 @@ interface PlayerInteraction
     MousePosByPlayer: Map<CSPlayerPawn, Vec3>,
     MouseMovingBy: Set<CSPlayerPawn>
 }
-
-export class Event<TArgs extends unknown[]>
-{
-    private _callbacks: ((...args: TArgs) => void)[] = [];
-
-    public Add(cb: (...args: TArgs) => void): void
-    {
-        this._callbacks.push(cb);
-    }
-
-    public Invoke(...args: TArgs): void
-    {
-        for (const cb of this._callbacks)
-        {
-            cb(...args);
-        }
-    }
-}
-
+/**
+ * Main UI class
+ */
 export class UI
 {
+    /** Root is the first panel in the UI hierarchy.*/
     public Root?: BaseUIPanel;
 
+    /** World space origin of the entire UI.*/
     public Origin: Vec3 = Vec3.Zero;
+
+    /** World space angles of the entire UI.*/
     public Angles: Euler = Euler.Zero;
+
+    /**
+     * World space scale of the entire UI, this does not affect the size units used to size panels,
+     * a 10 unit wide panel in a UI with a scale of 2 will have a final world size of 20 units
+     */
     public Scale: number = 1;
+
+    /**
+     * Panel render brightness for particle based panels
+     */
     public Brightness: number = 1;
+
+    /** X axis alignment of the entire UI relative to its world space origin, uses Root panel size to align.*/
     public AlignX: AlignXType = AlignX.Left;
+    /** Y axis alignment of the entire UI relative to its world space origin, uses Root panel size to align.*/
     public AlignY: AlignYType = AlignY.Top;
 
-    private readonly _Players: Map<CSPlayerPawn, PlayerState> = new Map();
-    public get Players(): ReadonlyMap<CSPlayerPawn, PlayerState>
-    {
-        return this._Players;
-    }
-
-    private readonly _InputLockByPlayer: Map<CSPlayerPawn, BaseUIPanel> = new Map();
-
-    public GetInputLock(player: CSPlayerPawn): BaseUIPanel | undefined
-    {
-        return this._InputLockByPlayer.get(player);
-    }
-
-    public SetInputLock(player: CSPlayerPawn, panel: BaseUIPanel): void
-    {
-        this._InputLockByPlayer.set(player, panel);
-    }
-
-    public ClearInputLock(player: CSPlayerPawn): void
-    {
-        this._InputLockByPlayer.delete(player);
-    }
-
-    private _CleanupMode: boolean = false;
-    public get CleanupMode(): boolean
-    {
-        return this._CleanupMode;
-    }
-
-    public GetPanel(name: string): BaseUIPanel | undefined
-    {
-        if (this.Root?.Name === name)
-        {
-            return this.Root;
-        }
-
-        return this.Root?.GetPanel(name);
-    }
-
-    public GetPanels(name: string): BaseUIPanel[]
-    {
-        return this.Root?.GetPanels(name) ?? [];
-    }
-
+    /**
+     * Adds a player to the UI, multiple players can use the UI at the same time.  
+     * Input is handled per player.
+     */
     public AddPlayer(pawn: CSPlayerPawn): void
     {
         if (!this._Players.has(pawn))
@@ -224,6 +284,9 @@ export class UI
         }
     }
 
+    /**
+     * Removes a player from the UI.
+     */
     public RemovePlayer(pawn: CSPlayerPawn): void
     {
         this._Players.delete(pawn);
@@ -236,12 +299,88 @@ export class UI
         }
     }
 
+    /**
+     * Get all the players currently using this UI.
+     */
+    public get Players(): ReadonlyMap<CSPlayerPawn, PlayerState>
+    {
+        return this._Players;
+    }
+    private readonly _Players: Map<CSPlayerPawn, PlayerState> = new Map();
+
+    /**
+     * Get the control that the player has input lock over.
+     */
+    public GetInputLock(player: CSPlayerPawn): BaseUIPanel | undefined
+    {
+        return this._InputLockByPlayer.get(player);
+    }
+
+    /**
+     * Set the control that the player will have input lock over.
+     */
+    public SetInputLock(player: CSPlayerPawn, panel: BaseUIPanel): void
+    {
+        this._InputLockByPlayer.set(player, panel);
+    }
+
+    /**
+     * Clears input lock for the player.
+     */
+    public ClearInputLock(player: CSPlayerPawn): void
+    {
+        this._InputLockByPlayer.delete(player);
+    }
+
+    // handles storing control input locks per player, input lock means only that control receives input
+    // after being clicked until the click is released
+    private readonly _InputLockByPlayer: Map<CSPlayerPawn, BaseUIPanel> = new Map();
+
+    /**
+     * Are we in cleanup mode?
+     * Cleanup mode is set when {@link Cleanup()} is called
+     */
+    public get CleanupMode(): boolean
+    {
+        return this._CleanupMode;
+    }
+    private _CleanupMode: boolean = false;
+
+    /**
+     * Enters cleanup mode, all panels will delete their game entity "renderable" components.  
+     * Used to handle live reloads, you should call this from the 'before' callback of {@link Instance.OnScriptReload}
+     */
     public Cleanup()
     {
         this._CleanupMode = true;
         this.Root?.Think();
     }
 
+    /**
+     * Find a single panel in the UI hierarchy by name.
+     */
+    public GetPanel(name: string): BaseUIPanel | undefined
+    {
+        if (this.Root?.Name === name)
+        {
+            return this.Root;
+        }
+
+        return this.Root?.GetPanel(name);
+    }
+
+    /**
+     * Finds all panels in the hierarchy matching the name, supports * wild cards.   
+     */
+    public GetPanels(name: string): BaseUIPanel[]
+    {
+        return this.Root?.GetPanels(name) ?? [];
+    }
+
+    /**
+     * Main think function, you should call this once per tick in your own think loop.  
+     * Calls into panel think recursively for every panel, starting from Root.
+     */
     public Think(): void
     {
         if (this.Root === undefined || this.CleanupMode)
@@ -251,7 +390,7 @@ export class UI
 
         for (const [pawn, state] of this._Players)
         {
-            if (pawn == undefined || !pawn.IsValid())
+            if (pawn === undefined || !pawn.IsValid())
             {
                 this.RemovePlayer(pawn);
                 continue;
@@ -267,20 +406,100 @@ export class UI
     }
 }
 
+/**
+ * Main abstract UI panel class, does not handle rendering.  
+ * All specialised panels inherit from this.
+ */
 export abstract class BaseUIPanel
 {
-    ///////// UI /////////
+    /**
+     * The {@link UI} that this panel is a part of. 
+     */
     public readonly UI: UI;
 
-    protected readonly LayoutTransforms: Transforms = { Origin: Vec3.Zero, Width: 0, Height: 0 };
+    /**
+     * The render color of this panel.
+     */
+    public Color: Color = { r: 255, g: 255, b: 255, a: 255 };
+    
+    /**
+     * Panel Z index, panels with a higher z index get offset more from the surface of their parents, one Z index increment is {@link PANEL_Z_INCREMENT}
+     */
+    public ZIndex: number = 1;
 
-    private _Name?: string;
-
+    /**
+     * Get the name of this panel.
+     */
     public get Name(): string | undefined
     {
         return this._Name;
     }
+    private _Name?: string;
 
+    /**
+     * Get the parent of this panel.
+     */
+    public get Parent(): BaseUIPanel | undefined 
+    {
+        return this._Parent; 
+    }
+
+    /**
+     * Set the parent of this panel
+     */
+    public set Parent(parent: BaseUIPanel)
+    {
+        if (this._Parent !== undefined)
+        {
+            ArrayRemoveByRef<BaseUIPanel>(this._Parent._Children, this);
+        }
+
+        this._Parent = parent;
+        this._Parent._Children.push(this);
+    }
+
+    private _Parent?: BaseUIPanel;
+
+    /**
+     * Get all children of this panel.
+     */
+    public get Children(): BaseUIPanel[] 
+    {
+        return this._Children; 
+    }
+    private readonly _Children: BaseUIPanel[] = [];
+
+    constructor(parent: BaseUIPanel | UI, name: string | undefined = undefined)
+    {
+        this._Name = name;
+
+        if (parent instanceof UI)
+        {
+            this.UI = parent;
+            this.UI.Root = this;
+        }
+        else
+        {
+            this.Parent = parent;
+            this.UI = parent.UI;
+        }
+    }
+
+    // abstract methods
+    protected abstract Render(worldTransforms: Transforms): void;
+    protected abstract Cleanup(): void;
+
+    // for subclasses that have intrinsic content size like text, called during MeasurePanel after children have been measured but before
+    // the panel's own Size.Fit dimensions are resolved
+    // return the natural { width, height } of the content at scale = 1, return undefined to use the normal child based measurement
+    protected MeasureContent(): { width: number; height: number } | undefined
+    {
+        return undefined;
+    }
+
+    /**
+     * Find a single panel in the UI hierarchy by name.
+     */
     public GetPanel(name: string): BaseUIPanel | undefined
     {
         if (this.Name === name)
@@ -297,6 +516,16 @@ export abstract class BaseUIPanel
                 return childPanel;
             }
         }
+    }
+
+    /** Finds all panels in the hierarchy matching the name, supports * wild cards */
+    public GetPanels(name: string): BaseUIPanel[]
+    {
+        const panels: BaseUIPanel[] = [];
+
+        this.GetPanelsInternal(name, panels);
+
+        return panels;
     }
 
     private MatchNamePattern(pattern: string, name: string | undefined): boolean
@@ -322,20 +551,28 @@ export abstract class BaseUIPanel
         }
     }
 
-    /** Finds all panels in the hierarchy matching the name, supports * wild cards */
-    public GetPanels(name: string): BaseUIPanel[]
+    /**
+     * When true, holding the mouse button while hovering this panel will lock all input to it for that player
+     * until the button is released.
+     */
+    public LockInput: boolean = false;
+
+    /**
+     * Gets the current {@link Layout} object of this panel.
+     */
+    public get Layout(): Layout
     {
-        const panels: BaseUIPanel[] = [];
-
-        this.GetPanelsInternal(name, panels);
-
-        return panels;
+        return this._Layout;
     }
 
-    public Color: Color = { r: 255, g: 255, b: 255, a: 255 };
-    public ZIndex: number = 1;
-
-    ///////// Layout /////////
+    /**
+     * Sets the current {@link Layout} object of this panel.  
+     * Missing params will be defaulted to {@link BaseUIPanel.DefaultLayout}.
+     */
+    public set Layout(layout: Partial<Layout>)
+    {
+        this._Layout = { ...BaseUIPanel.DefaultLayout, ...layout };
+    }
 
     private static readonly DefaultLayout: Layout = {
         Width: 50,
@@ -349,26 +586,16 @@ export abstract class BaseUIPanel
 
     private _Layout: Layout = { ...BaseUIPanel.DefaultLayout };
 
-    public get Layout(): Layout
-    {
-        return this._Layout;
-    }
-
-    public set Layout(layout: Partial<Layout>)
-    {
-        this._Layout = { ...BaseUIPanel.DefaultLayout, ...layout };
-    }
-
-    ///////// Input lock /////////
+    // written after layouting
+    protected readonly LayoutedTransforms: Transforms = { Origin: Vec3.Zero, Width: 0, Height: 0 };
 
     /**
-     * When true, holding the mouse button while hovering this panel will lock all input to it for that player until the button is released
+     * Overloaded function for starting animations.
+     * 
+     * - target - Target variable to animate towards.
+     * - speed - Speed of interpolation from 0 to 1, 0 is no animation, 1 is instant snap.
+     * - type - Panel property to animate, see {@link AnimationValueTypes}.
      */
-    public LockInput: boolean = false;
-
-    ///////// Animation /////////
-    private Animations: Animation<unknown>[] = [];
-
     public Animate(target: Color, speed: number, type: AnimationValueTypes.Color): void;
     public Animate(target: number, speed: number, type: AnimationValueTypes.Color): void;
     public Animate(target: number, speed: number, type: AnimationValueTypes.Alpha): void;
@@ -377,7 +604,7 @@ export abstract class BaseUIPanel
     public Animate(target: number, speed: number, type: AnimationValueTypes.Width): void;
     public Animate(target: number, speed: number, type: AnimationValueTypes.Height): void;
 
-    public Animate(target: AnimationValues, speed: number, type: AnimationValueTypes): void 
+    public Animate(target: AnimationTypes, speed: number, type: AnimationValueTypes): void 
     {
         const existing = this.Animations.find(a => a.type === type);
         if (existing) 
@@ -391,46 +618,33 @@ export abstract class BaseUIPanel
         }
     }
 
-    ///////// Parent /////////
-    private _Parent?: BaseUIPanel;
+    private Animations: Animation<unknown>[] = [];
 
-    public get Parent(): BaseUIPanel | undefined 
-    {
-        return this._Parent; 
-    }
+    /** Called when the mouse first enters this panel */
+    public readonly OnMouseEnter = new Event<[BaseUIPanel, CSPlayerPawn]>();
 
-    public set Parent(parent: BaseUIPanel)
-    {
-        if (this._Parent !== undefined)
-        {
-            ArrayRemoveByRef<BaseUIPanel>(this._Parent._Children, this);
-        }
+    /** Called when the mouse leaves this panel */
+    public readonly OnMouseLeave = new Event<[BaseUIPanel, CSPlayerPawn]>();
 
-        this._Parent = parent;
-        this._Parent._Children.push(this);
-    }
+    /** Called when the mouse is pressed on this panel */
+    public readonly OnMouseDown = new Event<[BaseUIPanel, CSPlayerPawn]>();
 
-    ///////// Children /////////
-    private readonly _Children: BaseUIPanel[] = [];
-    public get Children(): BaseUIPanel[] 
-    {
-        return this._Children; 
-    }
+    /** Called when the mouse is released after being pressed on this panel */
+    public readonly OnMouseUp = new Event<[BaseUIPanel, CSPlayerPawn]>();
 
-    ///////// Per-player interaction state /////////
-    private PlayerInteraction: PlayerInteraction = {
+    /** Called when the mouse is moved on this panel */
+    public readonly OnMouseMoved = new Event<[BaseUIPanel, CSPlayerPawn]>();
+    
+    /** Called after layouting but before rendering every tick. */
+    public readonly OnThink = new Event<[BaseUIPanel, Transforms]>();
 
-        HoveredBy: new Set<CSPlayerPawn>(),
-        ClickingBy: new Set<CSPlayerPawn>(),
-        MousePosByPlayer: new Map<CSPlayerPawn, Vec3>(),
-        MouseMovingBy: new Set<CSPlayerPawn>(),
-    };
-
+    /** Is pawn cursor over this panel?*/
     public IsHoveredBy(player: CSPlayerPawn): boolean
     {
         return this.PlayerInteraction.HoveredBy.has(player);
     }
 
+    /** Is pawn clicking this panel?*/
     public IsClickingBy(player: CSPlayerPawn): boolean
     {
         return this.PlayerInteraction.ClickingBy.has(player);
@@ -444,6 +658,7 @@ export abstract class BaseUIPanel
         return this.PlayerInteraction.MousePosByPlayer.get(player) ?? undefined;
     }
 
+    /** Is pawn cursor moving over this panel? Fired if the cursor pos from last tick doesn't match current tick.*/
     public IsMouseMovingBy(player: CSPlayerPawn): boolean
     {
         return this.PlayerInteraction.MouseMovingBy.has(player);
@@ -461,16 +676,19 @@ export abstract class BaseUIPanel
         return this.PlayerInteraction.ClickingBy.size > 0; 
     }
 
+    /** Get current world width of the panel, after layouting.*/
     public get WorldWidth(): number
     {
-        return this.LayoutTransforms.Width * this.UI.Scale;
+        return this.LayoutedTransforms.Width * this.InheritedScale;
     }
 
+    /** Get current world height of the panel, after layouting.*/
     public get WorldHeight(): number
     {
-        return this.LayoutTransforms.Height * this.UI.Scale;
+        return this.LayoutedTransforms.Height * this.InheritedScale;
     }
 
+    /** Current world space scale of this panel, taking into account scales of all parents.*/
     public get InheritedScale(): number
     {
         const ownScale = this.Layout.Scale ?? 1;
@@ -478,41 +696,10 @@ export abstract class BaseUIPanel
         return parentScale * ownScale * (this.Layout.VisualScale ?? 1);
     }
 
-    ///////// Callbacks (panel, player) /////////
-    public readonly OnMouseEnter = new Event<[BaseUIPanel, CSPlayerPawn]>();
-    public readonly OnMouseLeave = new Event<[BaseUIPanel, CSPlayerPawn]>();
-    public readonly OnMouseDown = new Event<[BaseUIPanel, CSPlayerPawn]>();
-    public readonly OnMouseUp = new Event<[BaseUIPanel, CSPlayerPawn]>();
-    public readonly OnMouseMoved = new Event<[BaseUIPanel, CSPlayerPawn]>();
-    public readonly OnThink = new Event<[BaseUIPanel, Transforms]>();
-
-    constructor(parent: BaseUIPanel | UI, name: string | undefined = undefined)
-    {
-        this._Name = name;
-
-        if (parent instanceof UI)
-        {
-            this.UI = parent;
-            this.UI.Root = this;
-        }
-        else
-        {
-            this.Parent = parent;
-            this.UI = parent.UI;
-        }
-    }
-
-    protected abstract Render(worldTransforms: Transforms): void;
-    protected abstract Cleanup(): void;
-
-    // for subclasses that have intrinsic content size like text, called during MeasurePanel after children have been measured but before
-    // the panel's own Size.Fit dimensions are resolved
-    // return the natural { width, height } of the content at scale = 1, return undefined to use the normal child based measurement
-    protected MeasureContent(): { width: number; height: number } | undefined
-    {
-        return undefined;
-    }
-
+    /**
+     * Called once every tick recursively.  
+     * You can manually call this if you need to instantly update state within the same tick.
+     */
     public Think(parentWorldTransforms?: Transforms): void
     {
         
@@ -538,16 +725,21 @@ export abstract class BaseUIPanel
             this.PositionPanel(0, 0);
         }
 
-        const transforms = this.CalculateWorldTransforms(parentWorldTransforms);
+        for (let i = this.Animations.length - 1; i >= 0; i--)
+        {
+            this.HandleAnimation(this.Animations[i]);
+        }
+
+        const transforms = this.CalculateFinalWorldTransforms(parentWorldTransforms);
 
         this.OnThink.Invoke(this, transforms);
 
-        if (Debug)
+        if (DEBUG)
         {
-            const tl = this.UIToWorld(new Vec3(0, 0, 0), transforms);
-            const tr = this.UIToWorld(new Vec3(1, 0, 0), transforms);
-            const br = this.UIToWorld(new Vec3(1, 1, 0), transforms);
-            const bl = this.UIToWorld(new Vec3(0, 1, 0), transforms);
+            const tl = this.LocalToWorld(new Vec3(0, 0, 0), transforms);
+            const tr = this.LocalToWorld(new Vec3(1, 0, 0), transforms);
+            const br = this.LocalToWorld(new Vec3(1, 1, 0), transforms);
+            const bl = this.LocalToWorld(new Vec3(0, 1, 0), transforms);
 
             const color = this.GetDebugColor();
             const duration = 1 / 64;
@@ -557,7 +749,7 @@ export abstract class BaseUIPanel
             Instance.DebugLine({ start: br, end: bl, duration, color });
             Instance.DebugLine({ start: bl, end: tl, duration, color });
         }
-        
+
         this.Render(transforms);
 
         for (const [pawn, state] of this.UI.Players)
@@ -565,94 +757,98 @@ export abstract class BaseUIPanel
             this.HandleInteractionForPlayer(pawn, state, transforms);
         }
 
-        for (let i = this.Animations.length - 1; i >= 0; i--)
-        {
-            const anim = this.Animations[i];
-            let done: boolean;
-
-            switch (anim.type)
-            {
-                case AnimationValueTypes.Color:
-                {
-                    const raw = anim.target;
-                    const t: Color = typeof raw === "number"
-                        ? { r: raw, g: raw, b: raw, a: this.Color.a }
-                        : raw as Color;
-                    const r = LerpColor(this.Color, t, anim.speed);
-                    this.Color = r.value;
-                    done = r.done;
-                    break;
-                }
-
-                case AnimationValueTypes.Alpha:
-                {
-                    const r = LerpNum(this.Color.a, anim.target as number, anim.speed);
-                    this.Color.a = r.value;
-                    done = r.done;
-                    break;
-                }
-
-                case AnimationValueTypes.Scale:
-                {
-                    const r = LerpNum(this.Layout.Scale ?? 1, anim.target as number, anim.speed);
-                    this.Layout.Scale = r.value;
-                    done = r.done;
-                    break;
-                }
-
-                case AnimationValueTypes.VisualScale:
-                {
-                    const r = LerpNum(this.Layout.VisualScale ?? 1, anim.target as number, anim.speed);
-                    this.Layout.VisualScale = r.value;
-                    done = r.done;
-                    break;
-                }
-
-                case AnimationValueTypes.Width:
-                {
-                    const r = LerpNum((this.Layout.Width as number) ?? 1, anim.target as number, anim.speed);
-                    this.Layout.Width = r.value;
-                    done = r.done;
-                    break;
-                }
-
-                case AnimationValueTypes.Height:
-                {
-                    const r = LerpNum((this.Layout.Height as number) ?? 1, anim.target as number, anim.speed);
-                    this.Layout.Height = r.value;
-                    done = r.done;
-                    break;
-                }
-            }
-
-            if (done!) this.Animations.splice(i, 1);
-        }
-
         for (const child of this._Children)
         {
             child.Think(transforms);
         }
     }
+
+    private HandleAnimation(anim: Animation<unknown>)
+    {
+        let done: boolean;
+
+        switch (anim.type)
+        {
+            case AnimationValueTypes.Color:
+            {
+                const raw = anim.target;
+                const t: Color = typeof raw === "number"
+                    ? { r: raw, g: raw, b: raw, a: this.Color.a }
+                    : raw as Color;
+                const r = LerpColor(this.Color, t, anim.speed);
+                this.Color = r.value;
+                done = r.done;
+                break;
+            }
+
+            case AnimationValueTypes.Alpha:
+            {
+                const r = LerpNum(this.Color.a, anim.target as number, anim.speed);
+                this.Color.a = r.value;
+                done = r.done;
+                break;
+            }
+
+            case AnimationValueTypes.Scale:
+            {
+                const r = LerpNum(this.Layout.Scale ?? 1, anim.target as number, anim.speed);
+                this.Layout.Scale = r.value;
+                done = r.done;
+                break;
+            }
+
+            case AnimationValueTypes.VisualScale:
+            {
+                const r = LerpNum(this.Layout.VisualScale ?? 1, anim.target as number, anim.speed);
+                this.Layout.VisualScale = r.value;
+                done = r.done;
+                break;
+            }
+
+            case AnimationValueTypes.Width:
+            {
+                const r = LerpNum((this.Layout.Width as number) ?? 1, anim.target as number, anim.speed);
+                this.Layout.Width = r.value;
+                done = r.done;
+                break;
+            }
+
+            case AnimationValueTypes.Height:
+            {
+                const r = LerpNum((this.Layout.Height as number) ?? 1, anim.target as number, anim.speed);
+                this.Layout.Height = r.value;
+                done = r.done;
+                break;
+            }
+        }
+
+        if (done) 
+        {
+            ArrayRemoveByRef<Animation<unknown>>(this.Animations, anim);
+        }
+    }
     
     // instead of calculating layout different for width and height directly, we can calculate "along" or "across" the layout axis
     // conceptually with this approach layouting UI is mostly a 1 dimensional problem (ignoring grid layouts)
+    private _AxisHelper?: AxisHelper;
+
     private BuildAxisHelper(): AxisHelper
     {
         const { pL, pR, pT, pB } = GetPadding(this.Layout.Padding);
         const h = this.Layout.Flow === Flow.LeftRight;
     
         return {
-            alongSize:          () => h ? this.LayoutTransforms.Width : this.LayoutTransforms.Height,
-            acrossSize:         () => h ? this.LayoutTransforms.Height : this.LayoutTransforms.Width,
+            alongSize:          () => h ? this.LayoutedTransforms.Width : this.LayoutedTransforms.Height,
+            acrossSize:         () => h ? this.LayoutedTransforms.Height : this.LayoutedTransforms.Width,
 
             setAlong:  (v) => 
             {
-                if (h) this.LayoutTransforms.Width = v; else this.LayoutTransforms.Height = v; 
+                if (h) this.LayoutedTransforms.Width = v; else this.LayoutedTransforms.Height = v; 
             },
 
             setAcross: (v) => 
             {
-                if (h) this.LayoutTransforms.Height = v; else this.LayoutTransforms.Width = v; 
+                if (h) this.LayoutedTransforms.Height = v; else this.LayoutedTransforms.Width = v; 
             },
 
             alongSizeType:  h ? this.Layout.Width : this.Layout.Height,
@@ -665,8 +861,6 @@ export abstract class BaseUIPanel
         };
     }
 
-    private _AxisHelper?: AxisHelper;
-
     protected GetAxisHelper(): AxisHelper
     {
         if (this._AxisHelper === undefined)
@@ -676,6 +870,7 @@ export abstract class BaseUIPanel
         return this._AxisHelper;
     }
 
+    // measure initial sizes of all panels
     private MeasurePanel()
     {
         for (const child of this.Children)
@@ -744,9 +939,9 @@ export abstract class BaseUIPanel
         {
             // grow children dont contribute to sizing right now, DistributeGrow pass will assign their size later
 
-            const childAlongSize = horizontal ? child.LayoutTransforms.Width : child.LayoutTransforms.Height;
+            const childAlongSize = horizontal ? child.LayoutedTransforms.Width : child.LayoutedTransforms.Height;
             const childAlongSizeType = horizontal ? child.Layout.Width : child.Layout.Height;
-            const childAcrossSize = horizontal ? child.LayoutTransforms.Height : child.LayoutTransforms.Width;
+            const childAcrossSize = horizontal ? child.LayoutedTransforms.Height : child.LayoutedTransforms.Width;
             const childAcrossSizeType = horizontal ? child.Layout.Height : child.Layout.Width;
 
             if (childAlongSizeType !== Size.Grow)
@@ -809,7 +1004,7 @@ export abstract class BaseUIPanel
             }
             else
             {
-                alongFixed += horizontal ? child.LayoutTransforms.Width : child.LayoutTransforms.Height;
+                alongFixed += horizontal ? child.LayoutedTransforms.Width : child.LayoutedTransforms.Height;
             }
         }
 
@@ -822,7 +1017,7 @@ export abstract class BaseUIPanel
             const share = freeSpace / growChildren.length;
             for (const child of growChildren)
             {
-                if (horizontal) child.LayoutTransforms.Width = share; else child.LayoutTransforms.Height = share;
+                if (horizontal) child.LayoutedTransforms.Width = share; else child.LayoutedTransforms.Height = share;
             }
         }
         
@@ -832,7 +1027,7 @@ export abstract class BaseUIPanel
             const childCrossSizeType = horizontal ? child.Layout.Height : child.Layout.Width;
             if (childCrossSizeType === Size.Grow)
             {
-                if (horizontal) child.LayoutTransforms.Height = acrossInterior; else child.LayoutTransforms.Width = acrossInterior;
+                if (horizontal) child.LayoutedTransforms.Height = acrossInterior; else child.LayoutedTransforms.Width = acrossInterior;
             }
         }
     
@@ -843,14 +1038,15 @@ export abstract class BaseUIPanel
         }
     }
 
+    // position the panels after they have been sized
     private PositionPanel(x: number, y: number) 
     {
-        const parentWidth = this.Parent?.LayoutTransforms.Width ?? 1;
-        const parentHeight = this.Parent?.LayoutTransforms.Height ?? 1;
+        const parentWidth = this.Parent?.LayoutedTransforms.Width ?? 1;
+        const parentHeight = this.Parent?.LayoutedTransforms.Height ?? 1;
         
         // sizing in final UI space will be normalised
-        this.LayoutTransforms.Origin.x = x / parentWidth;
-        this.LayoutTransforms.Origin.y = y / parentHeight;
+        this.LayoutedTransforms.Origin.x = x / parentWidth;
+        this.LayoutedTransforms.Origin.y = y / parentHeight;
 
         const axisHelper = this.GetAxisHelper();
         const horizontal = this.Layout.Flow === Flow.LeftRight;
@@ -865,8 +1061,8 @@ export abstract class BaseUIPanel
 
         for (const child of inFlowChildren) 
         {
-            alongContent += horizontal ? child.LayoutTransforms.Width : child.LayoutTransforms.Height;
-            crossContent = Math.max(crossContent, horizontal ? child.LayoutTransforms.Height : child.LayoutTransforms.Width);
+            alongContent += horizontal ? child.LayoutedTransforms.Width : child.LayoutedTransforms.Height;
+            crossContent = Math.max(crossContent, horizontal ? child.LayoutedTransforms.Height : child.LayoutedTransforms.Width);
         }
 
         // interior space available for children after removing padding
@@ -902,8 +1098,8 @@ export abstract class BaseUIPanel
         // position each child, advancing the 'along' cursor by child size + gap after each
         for (const child of inFlowChildren) 
         {
-            const childAlong = horizontal ? child.LayoutTransforms.Width : child.LayoutTransforms.Height;
-            const childCross = horizontal ? child.LayoutTransforms.Height : child.LayoutTransforms.Width;
+            const childAlong = horizontal ? child.LayoutedTransforms.Width : child.LayoutedTransforms.Height;
+            const childCross = horizontal ? child.LayoutedTransforms.Height : child.LayoutedTransforms.Width;
 
             // each child is independently aligned on the cross axis
             let crossOffset = axisHelper.acrossPaddingStart;
@@ -963,7 +1159,7 @@ export abstract class BaseUIPanel
 
                 if (ax.type === "Relative")
                 {
-                    childX = ax.value * this.LayoutTransforms.Width;
+                    childX = ax.value * this.LayoutedTransforms.Width;
                 }
             }
 
@@ -976,13 +1172,21 @@ export abstract class BaseUIPanel
 
                 if (ay.type === "Relative")
                 {
-                    childY = ay.value * this.LayoutTransforms.Height;
+                    childY = ay.value * this.LayoutedTransforms.Height;
                 }
             }
 
             child.PositionPanel(childX, childY);
         }
     }
+
+    private PlayerInteraction: PlayerInteraction = {
+
+        HoveredBy: new Set<CSPlayerPawn>(),
+        ClickingBy: new Set<CSPlayerPawn>(),
+        MousePosByPlayer: new Map<CSPlayerPawn, Vec3>(),
+        MouseMovingBy: new Set<CSPlayerPawn>(),
+    };
 
     /** Called by UI.RemovePlayer to purge a disconnected player's state. */
     public CleanupPlayer(player: CSPlayerPawn): void
@@ -1120,13 +1324,13 @@ export abstract class BaseUIPanel
         }
     }
 
-    private CalculateWorldTransforms(parentWorldTransforms?: Transforms): Transforms
+    private CalculateFinalWorldTransforms(parentWorldTransforms?: Transforms): Transforms
     {        
         const parentOrigin = parentWorldTransforms !== undefined ? parentWorldTransforms.Origin : (() =>
         {
             // when we are root, shift the UI origin based on the alignment settings
-            const w = this.LayoutTransforms.Width * this.UI.Scale;
-            const h = this.LayoutTransforms.Height * this.UI.Scale;
+            const w = this.LayoutedTransforms.Width * this.UI.Scale;
+            const h = this.LayoutedTransforms.Height * this.UI.Scale;
 
             let alignOffsetX = 0;
             if (this.UI.AlignX === AlignX.Center) alignOffsetX = -w / 2;
@@ -1141,15 +1345,15 @@ export abstract class BaseUIPanel
                 .add(this.UI.Angles.down.multiply(alignOffsetY));
         })();
 
-        const parentWidth = (this._Parent?.LayoutTransforms.Width ?? 1) * this.UI.Scale;
-        const parentHeight = (this._Parent?.LayoutTransforms.Height ?? 1) * this.UI.Scale;
+        const parentWidth = (this._Parent?.LayoutedTransforms.Width ?? 1) * this.UI.Scale;
+        const parentHeight = (this._Parent?.LayoutedTransforms.Height ?? 1) * this.UI.Scale;
 
-        const ox = (this.LayoutTransforms.Origin.x * parentWidth);
-        const oy = (this.LayoutTransforms.Origin.y * parentHeight);
+        const ox = (this.LayoutedTransforms.Origin.x * parentWidth);
+        const oy = (this.LayoutedTransforms.Origin.y * parentHeight);
 
         const visualScale = this.Layout.VisualScale ?? 1;
-        const layoutWidth = this.LayoutTransforms.Width * this.UI.Scale;
-        const layoutHeight = this.LayoutTransforms.Height * this.UI.Scale;
+        const layoutWidth = this.LayoutedTransforms.Width * this.UI.Scale;
+        const layoutHeight = this.LayoutedTransforms.Height * this.UI.Scale;
 
         const centerOffsetX = (layoutWidth * (1 - visualScale)) / 2;
         const centerOffsetY = (layoutHeight * (1 - visualScale)) / 2;
@@ -1170,7 +1374,13 @@ export abstract class BaseUIPanel
         };
     }
 
-    public UIToWorld(uv: Vec3, worldTransforms: Transforms): Vec3 
+    /**
+     * Transforms a local space point into world space.
+     * 
+     * - uv - Local space point in 0 to 1 space, where x is horizontal and y is vertical.
+     * - worldTransforms - World space Transforms object after layouting.
+     */
+    public LocalToWorld(uv: Vec3, worldTransforms: Transforms): Vec3 
     {
         const ix = uv.x * worldTransforms.Width;
         const iy = uv.y * worldTransforms.Height;
@@ -1183,6 +1393,7 @@ export abstract class BaseUIPanel
 
     private DebugColor: Color | undefined;
 
+    // get a random color for the debug bounds, color is computed once and stored so it doesn't keep changing every frame
     private GetDebugColor(): Color
     {
         let color = this.DebugColor;
@@ -1270,7 +1481,7 @@ export class UIPanel extends BaseUIPanel
                 particleTemplateName = "*csui.particle.panel.template";
                 break;
 
-            case Shape.Elipse:
+            case Shape.Ellipse:
                 particleTemplateName = "*csui.particle.panel.circle.template";
                 break;
 
@@ -1487,6 +1698,7 @@ export class TextUIPanel extends BaseUIPanel
         this.PoolSize = 0;
     }
 }
+
 /////// UTILS ///////
 
 // taken from https://github.com/samisalreadytaken/vs_library
@@ -1516,6 +1728,7 @@ function ComputeIntersectionBarycentricCoordinates(rayStart: Vec3, rayEnd: Vec3,
     };
 }
 
+/** Take the name of a point_template and return a spawned model.*/
 export function SpawnModelTemplate(templateName: string): BaseModelEntity
 {
     const template = Instance.FindEntityByName(templateName) as PointTemplate;
@@ -1566,9 +1779,10 @@ function IsPlayerClicking(player: CSPlayerPawn | undefined)
     return (player?.IsInputPressed(CSInputs.ATTACK) || player?.IsInputPressed(CSInputs.USE)) ?? false;
 }
 
-function Log(msg: string, debugOnly: boolean = false)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function Log(msg: any, debugOnly: boolean = false)
 {
-    if (debugOnly && Debug)
+    if (debugOnly && !DEBUG)
     {
         return;
     }

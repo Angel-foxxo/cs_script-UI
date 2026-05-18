@@ -250,13 +250,13 @@ export class RadioButton extends BaseControl
     {
         super(parent, name);
 
-        this._BasePanel = new UIPanel(this, Shape.Elipse);
+        this._BasePanel = new UIPanel(this, Shape.Ellipse);
         this._BasePanel.Layout = {
             Width: Size.Grow,
             Height: Size.Grow,
         };
 
-        this._DotPanel = new UIPanel(this._BasePanel, Shape.Elipse, "");
+        this._DotPanel = new UIPanel(this._BasePanel, Shape.Ellipse, "");
         this._DotPanel.Color = this.DotColor;
         this._DotPanel.Layout.Width = Size.Grow;
         this._DotPanel.Layout.Height = Size.Grow;
@@ -469,7 +469,7 @@ export class Slider extends BaseControl
         this._SliderSpacer.Layout.Height = 0;
         this._SliderSpacer.Layout.Width = 0;
     
-        this._SliderKnob = new UIPanel(this._BasePanel, Shape.Elipse);
+        this._SliderKnob = new UIPanel(this._BasePanel, Shape.Ellipse);
         this._SliderKnob.Color = this.KnobColor;
 
         this.OnMouseDown.Add((_, player) => 
@@ -507,7 +507,7 @@ export class Slider extends BaseControl
             this._SliderKnob.Layout.Width = this.GetKnobRadius();
             this._SliderKnob.Layout.Height = this.GetKnobRadius();
 
-            const sliderAxis = this.Orientation === Orientation.Horizontal ? this.LayoutTransforms.Width : this.LayoutTransforms.Height;
+            const sliderAxis = this.Orientation === Orientation.Horizontal ? this.LayoutedTransforms.Width : this.LayoutedTransforms.Height;
 
             const t = Remap(this.MouseT, 0, 1, 0, sliderAxis - this.GetKnobRadius());
 
