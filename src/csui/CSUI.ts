@@ -19,6 +19,7 @@ import { Euler, Vec3 } from "@s2ze/math";
 import { BaseModelEntity, Color, CSInputs, CSPlayerPawn, Entity, Instance, PointTemplate } from "cs_script/point_script";
 import { Font } from "./font";
 import { Fonts, FontsMap, GetGlyphIndex } from "./font_definitions";
+import { Lab, OklabToSrgb, SrgbToOklab } from "./oklab";
 
 const ANIM_EPS = 0.001;
 const PANEL_Z_INCREMENT: number = 0.1;
@@ -1544,18 +1545,20 @@ function LerpNum(c: number, t: number, speed: number): { value: number; done: bo
  
 function LerpColor(c: Color, t: Color, speed: number): { value: Color; done: boolean }
 {
-    const n: Color = {
-        r: c.r + (t.r - c.r) * speed,
-        g: c.g + (t.g - c.g) * speed,
-        b: c.b + (t.b - c.b) * speed,
-        a: c.a + (t.a - c.a) * speed,
+    const cLab = SrgbToOklab(c);
+    const tLab = SrgbToOklab(t);
+
+    const n: Lab = {
+        l: cLab.l + (tLab.l - cLab.l) * speed,
+        a: cLab.a + (tLab.a - cLab.a) * speed,
+        b: cLab.b + (tLab.b - cLab.b) * speed,
     };
+
     const done =
-        Math.abs(t.r - n.r) < ANIM_EPS &&
-        Math.abs(t.g - n.g) < ANIM_EPS &&
-        Math.abs(t.b - n.b) < ANIM_EPS &&
-        Math.abs(t.a - n.a) < ANIM_EPS;
-    return { value: done ? t : n, done };
+        Math.abs(tLab.l - n.l) < ANIM_EPS &&
+        Math.abs(tLab.a - n.a) < ANIM_EPS &&
+        Math.abs(tLab.b - n.b) < ANIM_EPS;
+    return { value: done ? OklabToSrgb(tLab) : OklabToSrgb(n), done };
 }
 
 function IsPlayerClicking(player: CSPlayerPawn | undefined)
