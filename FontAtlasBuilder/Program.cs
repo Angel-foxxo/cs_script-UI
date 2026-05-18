@@ -32,11 +32,24 @@ static class FontAtlasGenerator
 
     static readonly float FontPixelSize = 256f;
 
-    static void Main()
+    static void Main(string[] args)
     {
+        Console.WriteLine($"Font Atlas Generator {VERSION}");
+        Console.WriteLine("Reads a TrueType/OpenType font file and produces all the required files for using this in engine and with typescript");
+
         Console.WriteLine($"\n======================== BUILDING FONTS ========================\n");
 
-        string charset = GetCharset();
+        string mainChars = DefaultChars;
+
+        for (int i = 0; i < args.Length; i++)
+        {
+            if (args[i].ToLower() == "-chars")
+            {
+                mainChars = args[i + 1];
+            }
+        }
+
+        string charset = GetCharset(mainChars);
         string addonPath = GetAddonContentFolder().FullName;
 
         Console.WriteLine($"Addon Path: {addonPath}\n");
@@ -89,7 +102,7 @@ static class FontAtlasGenerator
 
             Console.WriteLine($"\n======================== PROCESSING FONT: `{fontName}` ========================\n");
 
-            var glyphs = GetGlyphInfo(font);
+            var glyphs = GetGlyphInfo(font, charset);
             SaveIndividualGlyphPngs(glyphs, glyphOutputPath, font);
 
 
@@ -144,9 +157,10 @@ static class FontAtlasGenerator
         File.WriteAllText(Path.Combine(addonPath, $"maps/prefabs/csui/fonts.vmap"), vmap);
 
         Console.WriteLine("\nFinished writing font files.\nRecompile your map (entity only compile will do) in order to use any new fonts added.\n");
+        Console.ReadKey();
     }
 
-    static List<GlyphInfo> GetGlyphInfo(Font font)
+    static List<GlyphInfo> GetGlyphInfo(Font font, string charset)
     {
         var results = new List<GlyphInfo>();
 
@@ -158,7 +172,7 @@ static class FontAtlasGenerator
         var sfMeasure = StringFormat.GenericTypographic;
         sfMeasure.FormatFlags |= StringFormatFlags.MeasureTrailingSpaces;
 
-        foreach (char ch in GetCharset())
+        foreach (char ch in charset)
         {
             string s = ch.ToString();
 
@@ -273,7 +287,10 @@ static class FontAtlasGenerator
 
     static string FontName(Font font) => MakeValidFileName($"{font.Name}_{font.Style}");
 
-    static string GetCharset() => BaseChars + DefaultChars;
+    static string GetCharset(string mainchars)
+    {
+        return BaseChars + mainchars;
+    }
 
     static string PrintFloatExactSize(float v) => v.ToString("0.######", CultureInfo.InvariantCulture);
 
