@@ -683,6 +683,11 @@ export abstract class BaseUIPanel
     protected readonly LayoutedTransforms: Transforms = { Origin: Vec3.Zero, Width: 0, Height: 0 };
 
     /**
+     * Panel render brightness for particle based panels
+     */
+    public Brightness: number = 1;
+
+    /**
      * Overloaded function for starting animations.
      * 
      * - target - Target variable to animate towards.
@@ -1629,7 +1634,7 @@ export class UIPanel extends BaseUIPanel
 
         Instance.EntFireAtTarget({ target: this.Visual, input: "SetControlPoint", value: `1: ${worldTransforms.Width} ${worldTransforms.Height} ${this.Color.a}` });
         Instance.EntFireAtTarget({ target: this.Visual, input: "SetControlPoint", value: `2: ${this.Color.r} ${this.Color.g} ${this.Color.b}` });
-        Instance.EntFireAtTarget({ target: this.Visual, input: "SetControlPoint", value: `3: ${this.UI.Brightness} 0 0` });
+        Instance.EntFireAtTarget({ target: this.Visual, input: "SetControlPoint", value: `3: ${this.UI.Brightness * this.Brightness} 0 0` });
     }
 
     protected Cleanup(): void 
