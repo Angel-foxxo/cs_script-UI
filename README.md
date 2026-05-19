@@ -34,7 +34,7 @@ This code shows how to setup and use the CSUI library. It will display a UI pane
 
 ```typescript
 import { Instance } from "cs_script/point_script";
-import { AlignX, AlignY, Size, TextUIPanel, UI, UIPanel } from "./CSUI";
+import { AlignX, AlignY, AnimationValueTypes, Size, TextUIPanel, UI, UIPanel } from "./CSUI";
 import { Fonts } from "./font_definitions";
 import { Euler, Vec3 } from "@s2ze/math";
 
@@ -55,10 +55,24 @@ function SpawnTextUI()
     const text = new TextUIPanel(root, Fonts.Roboto_Regular, "Hello World!");
     text.Layout.Scale = 5;
 
+    // scale text when hovered
+    text.OnMouseEnter.Add(p => 
+    {
+        p.Animate(5.5, 0.3, AnimationValueTypes.Scale);
+    });
+
+    text.OnMouseLeave.Add(p => 
+    {
+        p.Animate(5, 0.1, AnimationValueTypes.Scale);
+    });
+
     const pawn = Instance.GetPlayerController(0)!.GetPlayerPawn()!;
+
+    DemoUI.AddPlayer(pawn);
+
     const pawnAngles = new Euler(pawn.GetEyeAngles());
 
-    DemoUI.Origin = new Vec3(pawn.GetEyePosition()).add(pawnAngles.forward.multiply(20));
+    DemoUI.Origin = new Vec3(pawn.GetEyePosition()).add(pawnAngles.forward.multiply(40));
     DemoUI.Angles = pawnAngles.forward.multiply(-1).eulerAngles;
 }
 
@@ -112,8 +126,8 @@ DemoUI.Origin = new Vec3(someEntity.GetAbsOrigin());
 DemoUI.Angles = new Euler(someEntity.GetAbsAngles());
 DemoUI.AlignX = AlignX.Center;
 DemoUI.AlignY = AlignY.Top;
-DemoUI.Brightness = 1.5;          // particle brightness multiplier
-DemoUI.Scale = 2;            // world space scale of the whole UI
+DemoUI.Brightness = 1.5; // brightness multiplier
+DemoUI.Scale = 2; // world space scale of the whole UI
 
 DemoUI.AddPlayer(Instance.GetPlayerController(0)!.GetPlayerPawn()!);
 ```
