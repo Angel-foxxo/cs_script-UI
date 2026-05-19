@@ -89,6 +89,6 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: csui-${{ github.ref_name }}.zip
+          files: cs_script-UI-${{ github.ref_name }}.zip
           generate_release_notes: false
           draft: true
