@@ -259,5 +259,5 @@ All built in controls read from `CurrentTheme` exported by `controls.ts`. You ca
 ---
 
 ## License
-- cs_script UI (`/src`) - GPL v3+
+- cs_script UI (`/src`) - Mozilla Public License Version 2.0
 - FontAtlasBuilder (`/FontAtlasBuilder`) - MIT

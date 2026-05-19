@@ -92,13 +92,13 @@
             
             "CMapEntity"
             {
-                "id" "elementid" "7af712a7-c284-43f9-aeb6-9f7ef0d96367"
+                "id" "elementid" "dfadd846-2a10-458d-9c1e-5879aa8464de"
                 "name" "string" "CSUI.particle.font.panel.roboto_regular"
                 "hitNormal" "vector3" "0 0 0"
                 "isProceduralEntity" "bool" "0"
                 "relayPlugData" "DmePlugList"
                 {
-                    "id" "elementid" "97dd61cc-c750-47a3-b9e9-772570c7154a"
+                    "id" "elementid" "f9b8eda5-90e4-4965-9e37-6e7d86a786cb"
                     "names" "string_array" [ ]
                     "dataTypes" "int_array" [ ]
                     "plugTypes" "int_array" [ ]
@@ -107,7 +107,7 @@
                 "connectionsData" "element_array" [ ]
                 "entity_properties" "EditGameClassProps"
                 {
-                    "id" "elementid" "5d950d3d-7d11-48c0-ae9d-c288ff94ac3d"
+                    "id" "elementid" "4b6626f3-b8b5-43c7-88a9-e7de952f25de"
                     "targetname" "string" "CSUI.particle.font.panel.roboto_regular"
                     "classname" "string" "info_particle_system"
                     "origin" "string" "0 0 16"
@@ -129,13 +129,13 @@
             },
             "CMapEntity"
             {
-                "id" "elementid" "97dd61cc-c750-47a3-b9e9-772570c7154a"
+                "id" "elementid" "f9b8eda5-90e4-4965-9e37-6e7d86a786cb"
                 "name" "string" "CSUI.particle.font.panel.roboto_regular.template"
                 "hitNormal" "vector3" "0 0 0"
                 "isProceduralEntity" "bool" "0"
                 "relayPlugData" "DmePlugList"
                 {
-                    "id" "elementid" "a39df7a8-c66f-4bf6-9e6d-ceace545f38d"
+                    "id" "elementid" "875791e4-bee5-4829-b355-822332a488b2"
                     "names" "string_array" [ ]
                     "dataTypes" "int_array" [ ]
                     "plugTypes" "int_array" [ ]
@@ -144,7 +144,7 @@
                 "connectionsData" "element_array" [ ]
                 "entity_properties" "EditGameClassProps"
                 {
-                    "id" "elementid" "b77ee809-7766-4367-9347-30ed036f5681"
+                    "id" "elementid" "87c8dcf9-8af9-4a64-88ad-3d71c66af53f"
                     "origin" "string" "0 0 0"
                     "targetname" "string" "CSUI.particle.font.panel.roboto_regular.template"
                     "classname" "string" "point_template"

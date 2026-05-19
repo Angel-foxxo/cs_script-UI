@@ -11,8 +11,10 @@
 *     Discord:  anngell8
 *     Email:    angelcazacu8@gmail.com
 *
-*   Licensed under the GNU General Public License v3 or later.
-*   See <https://www.gnu.org/licenses/> for details.
+*   Licensed under the Mozilla Public License Version 2.0.
+*   See <https://www.mozilla.org/en-US/MPL/2.0/> for details.
+* 
+*   https://github.com/Angel-foxxo/cs_script-UI
 */
 export const VERSION = "v1.0.0";
 
@@ -1577,7 +1579,7 @@ export class ModelUIPanel extends BaseUIPanel
 
     protected Cleanup(): void 
     {
-        this._Visual.Remove();
+        SafeKill(this._Visual);
     }
 }
 

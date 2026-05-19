@@ -1,4 +1,4 @@
-/*! Copyright (C) 2026 Angel Cazacu - Licensed under the GNU General Public License v3 or later. See <https://www.gnu.org/licenses/> for details. */
+/*! Copyright (C) 2026 Angel Cazacu - Licensed under the Mozilla Public License Version 2.0. See <https://www.mozilla.org/en-US/MPL/2.0/> for details. */
 
 import { Instance } from "cs_script/point_script";
 import { AlignX, AlignXType, AlignY, AnimationValueTypes, BaseUIPanel, Flow, InvisUIPanel, Remap, Shape, Size, TextUIPanel, UI, UIPanel, UISetDebug } from "./CSUI";
