@@ -999,6 +999,7 @@ export abstract class BaseUIPanel
 
         const axisHelper = this.GetAxisHelper();
         const gap = this.Layout.ChildGap ?? 0;
+        const scale = this.Layout.Scale ?? 1;
 
         // check if this panel has intrinsic content (like text) that should drive its Size.Fit dimensions instead of child based measurement
         const intrinsic = this.MeasureContent();
@@ -1006,8 +1007,6 @@ export abstract class BaseUIPanel
         if (intrinsic !== undefined)
         {
             // intrinsic content panels behave like leaf nodes, children dont contribute to sizing
-            const scale = this.Layout.Scale ?? 1;
-
             if (axisHelper.alongSizeType === Size.Fit || axisHelper.alongSizeType === Size.Grow)
             {
                 // Grow is resolved later in DistributeGrow; for Fit we use intrinsic width.
@@ -1081,18 +1080,16 @@ export abstract class BaseUIPanel
             Instance.Msg("UI: GROW children inside a FIT parent have no space to grow into");
         }
 
-        const scale = this.Layout.Scale ?? 1;
-
         switch (axisHelper.alongSizeType)
         {
-            case Size.Fit: axisHelper.setAlong(axisHelper.alongPadding + alongContentSize); break;
+            case Size.Fit: axisHelper.setAlong((axisHelper.alongPadding + alongContentSize) * scale); break;
             case Size.Grow: axisHelper.setAlong(0); break;
             default: axisHelper.setAlong(axisHelper.alongSizeType * scale); break;
         }
 
         switch (axisHelper.acrossSizeType)
         {
-            case Size.Fit: axisHelper.setAcross(axisHelper.acrossPadding + acrossContentSize); break;
+            case Size.Fit: axisHelper.setAcross((axisHelper.acrossPadding + acrossContentSize) * scale); break;
             case Size.Grow: axisHelper.setAcross(0); break;
             default: axisHelper.setAcross(axisHelper.acrossSizeType * scale); break;
         }
