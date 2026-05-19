@@ -3,6 +3,8 @@
 
 A in-world UI framework for Counter-Strike 2 [cs_script](https://www.source2.wiki/Scripting/Counter-Strike%202/cs_script/introduction?game=any). CSUI lets you build highly flexible and animated 2D interfaces that live in the game world using a powerful CSS like layouting system.
 
+![Showcase GIF](showcase.gif)
+
 ---------------------------------------------------
 
 ## Main Features
