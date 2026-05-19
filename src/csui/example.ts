@@ -1,7 +1,7 @@
 /*! Copyright (C) 2026 Angel Cazacu - Licensed under the GNU General Public License v3 or later. See <https://www.gnu.org/licenses/> for details. */
 
 import { Instance } from "cs_script/point_script";
-import { AlignX, AlignXType, AlignY, AnimationValueTypes, BaseUIPanel, Flow, InvisUIPanel, Shape, Size, TextUIPanel, UI, UIPanel, UISetDebug } from "./CSUI";
+import { AlignX, AlignXType, AlignY, AnimationValueTypes, BaseUIPanel, Flow, InvisUIPanel, Remap, Shape, Size, TextUIPanel, UI, UIPanel, UISetDebug } from "./CSUI";
 import { Euler, Vec3 } from "@s2ze/math";
 import { Fonts } from "./font_definitions";
 import { Button, CurrentTheme, Orientation, RadioButton, Slider } from "./controls";
@@ -19,7 +19,7 @@ function SpawnUI()
     const TestUI = new UI();
     TestUI.AddPlayer(Instance.GetPlayerController(0)!.GetPlayerPawn()!);
     TestUI.Brightness = 2;
-    TestUI.AlignX = AlignX.Center;
+    TestUI.AlignX = AlignX.Left;
     TestUI.AlignY = AlignY.Top;
     TestUI.Origin = new Vec3(TestUITarget.GetAbsOrigin());
     TestUI.Angles = new Euler(TestUITarget.GetAbsAngles());
@@ -39,7 +39,7 @@ function SpawnUI()
     SpawnTestUIControlPanel(root);
 }
 
-function SpawnTestUI(parent: BaseUIPanel): UIPanel
+function SpawnTestUI(parent: BaseUIPanel)
 {
     const menuItems = [
         "Hello World!", 
@@ -47,7 +47,7 @@ function SpawnTestUI(parent: BaseUIPanel): UIPanel
         "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG", 
         "the quick			brown fox jumps over the lazy dog", 
         "!\"@#$%^&*}{_+-=,./\\?:;<>][()`'", 
-        "1 2  3   4    5     6      7890"];
+        "1 2  3   4    5     6      7       890"];
 
     const menuColors = [
         { r: 80, g: 212, b: 85, a: 255 },
@@ -59,10 +59,10 @@ function SpawnTestUI(parent: BaseUIPanel): UIPanel
         
     ];
 
-    const root = new UIPanel(parent);
+    const root = new UIPanel(parent, Shape.Rect, "testUI");
     root.Color = CurrentTheme.UI;
     root.Layout = {
-        Width: 140,
+        Width: 150,
         Height: "Fit",
         Flow: Flow.TopBottom,
         AlignY: AlignY.Top,
@@ -134,11 +134,47 @@ function SpawnTestUI(parent: BaseUIPanel): UIPanel
             buttonPanel.Animate(1, 0.2, AnimationValueTypes.Scale);
         });
     }
+}
+
+function SpawnTestUIControlPanel(parent: BaseUIPanel)
+{
+    const root = new InvisUIPanel(parent);
+    root.Color = CurrentTheme.UI;
+    root.Layout = {
+        Width: Size.Fit,
+        Height: Size.Fit,
+        AlignY: AlignY.Top,
+        AlignX: AlignX.Absolute(160),
+        Flow: Flow.TopBottom,
+        ChildGap: 2,
+    };
+
+    SpawnTextAlignmentPanel(root);
+
+    // child gap
+    SpawnSliderPanel(root, "Child Gap", 0.5, 0.5, (p, l, t) => 
+    {
+        for (const panel of p.UI.GetPanel("testUI")!.GetPanels("*")) 
+        {
+            const val = t * 4;
+            panel.Layout.ChildGap = val;
+            l.Text = val.toFixed(2);
+        }
+    });
+
+    // width
+    SpawnSliderPanel(root, "Width", 1, 150, (p, l, t) => 
+    {
+        const mainPanel = p.UI.GetPanel("testUI")!;
+        const val = Remap(t, 0, 1, 80, 150);
+        mainPanel.Layout.Width = val;
+        l.Text = val.toFixed(2);
+    });
 
     return root;
 }
 
-function SpawnTestUIControlPanel(parent: BaseUIPanel): UIPanel
+function SpawnTextAlignmentPanel(parent: BaseUIPanel)
 {
     const root = new UIPanel(parent);
     root.Color = CurrentTheme.UI;
@@ -214,7 +250,7 @@ function SpawnTestUIControlPanel(parent: BaseUIPanel): UIPanel
                 break;
         }
 
-        const radioButtonText = new TextUIPanel(radioButtonPanel, Fonts.Roboto_Regular, alignX);
+        const radioButtonText = new TextUIPanel(radioButtonPanel, Fonts.Roboto_Regular, alignX, "radioAlignmentButtonText");
         radioButtonText.Layout = {
             Scale: 5,
             Width: Size.Grow,
@@ -230,15 +266,66 @@ function SpawnTestUIControlPanel(parent: BaseUIPanel): UIPanel
         {
             if (pressed)
             {
-                for (const text of radioButton.UI.GetPanels("mainUIText")) 
+                for (const panel of radioButton.UI.GetPanels("*")) 
                 {
-                    text.Layout.AlignX = alignX;
+                    if (panel instanceof TextUIPanel)
+                    {
+                        panel.Layout.AlignX = alignX;
+                    }
                 }
             }
         });
     }
+}
 
-    return root;
+function SpawnSliderPanel(parent: BaseUIPanel, labelString: string, sliderDefaultVal: number, defaultval: number, callback: (p: BaseUIPanel, l: TextUIPanel, t: number) => void)
+{
+    const root = new UIPanel(parent);
+    root.Color = CurrentTheme.UI;
+    root.Layout = {
+        Width: Size.Fit,
+        Height: Size.Fit,
+        AlignY: AlignY.Top,
+        AlignX: AlignX.Center,
+        Flow: Flow.TopBottom,
+        Padding: 2,
+        ChildGap: 2,
+    };
+
+    const text = new TextUIPanel(root, Fonts.Roboto_Regular, labelString);
+    text.Color = CurrentTheme.Contrast;
+    text.Layout = {
+        Width: Size.Fit,
+        Height: Size.Fit,
+        Flow: Flow.LeftRight,
+        AlignX: AlignX.Center,
+        AlignY: AlignY.Center,
+        ChildGap: 2,
+        Scale: 5,
+    };
+
+    const parentPanel = new UIPanel(root);
+    parentPanel.Color = CurrentTheme.UIMiddle;
+    parentPanel.Layout = {
+        Width: Size.Fit,
+        Height: Size.Fit,
+        Flow: Flow.LeftRight,
+        ChildGap: 2,
+        Padding: 2,
+    };
+
+    const slider = new Slider(parentPanel, Orientation.Horizontal);
+    slider.SliderThickness = 2;
+    slider.SliderLength = 40;
+    slider.MouseT = sliderDefaultVal;
+    slider.OnValueChanged.Add((t) => 
+    {
+        callback(slider, label, t);
+
+    });
+
+    const label = new TextUIPanel(parentPanel, Fonts.Roboto_Regular, defaultval.toFixed(2));
+    label.Layout.Scale = 5;
 }
 
 Instance.OnRoundStart(() => 

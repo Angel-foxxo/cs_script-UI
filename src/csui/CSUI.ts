@@ -1892,6 +1892,11 @@ function LerpColor(c: Color, t: Color, speed: number): { value: Color; done: boo
 
 function MatchNamePattern(pattern: string, name: string | undefined): boolean
 {
+    if (pattern === "*")
+    {
+        return true;
+    }
+    
     if (name === undefined)
     {
         return false;

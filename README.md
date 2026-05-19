@@ -91,6 +91,8 @@ Instance.OnScriptReload({
 
 > [!NOTE]
 > It is useful to make enclosed functions like above for spawning UIs, this allows calling them in the `after()` callback of `Instance.OnScriptReload()`, enabling live reloading of the UI when saving the script.
+>
+>Check out `maps/csui/example.vmap` and `src/csui/csui_example.ts` for a more indepth example.
 
 ### Adding fonts
 

@@ -1,7 +1,7 @@
 /*! Copyright (C) 2026 Angel Cazacu - Licensed under the GNU General Public License v3 or later. See <https://www.gnu.org/licenses/> for details. */
 
 import { Color, CSPlayerPawn } from "cs_script/point_script";
-import { AlignX, AlignY, AnimationValueTypes, Event, Flow, InvisUIPanel, Remap, Shape, Size, TextUIPanel, Transforms, UIPanel } from "./CSUI";
+import { AlignX, AlignY, AnimationValueTypes, BaseUIPanel, Event, Flow, InvisUIPanel, Remap, Shape, Size, TextUIPanel, Transforms, UIPanel } from "./CSUI";
 import { Fonts } from "./font_definitions";
 
 export const DEFAULT_FONT: Fonts = Fonts.Roboto_Regular;
@@ -110,7 +110,7 @@ export abstract class BaseControl extends InvisUIPanel
         super.Think(parentWorldTransforms);
     }
 
-    constructor(parent: UIPanel, name: string | undefined = undefined)
+    constructor(parent: BaseUIPanel, name: string | undefined = undefined)
     {
         super(parent, name);
     }
@@ -150,7 +150,7 @@ export class Button extends BaseControl
         this._TextPanel.Layout.Scale = scale;
     }
 
-    constructor(parent: UIPanel, shape: Shape = Shape.Rect, name: string | undefined = undefined)
+    constructor(parent: BaseUIPanel, shape: Shape = Shape.Rect, name: string | undefined = undefined)
     {
         super(parent, name);
 
@@ -246,7 +246,7 @@ export class RadioButton extends BaseControl
         }
     }
 
-    constructor(parent: UIPanel, name: string | undefined = undefined)
+    constructor(parent: BaseUIPanel, name: string | undefined = undefined)
     {
         super(parent, name);
 
@@ -447,7 +447,7 @@ export class Slider extends BaseControl
         }
     }
 
-    constructor(parent: UIPanel, orientation: Orientation, name: string | undefined = undefined)
+    constructor(parent: BaseUIPanel, orientation: Orientation, name: string | undefined = undefined)
     {
         super(parent, name);
         this.Orientation = orientation;
