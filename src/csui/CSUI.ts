@@ -24,6 +24,7 @@ import { Lab, OklabToSrgb, SrgbToOklab } from "./oklab";
 
 const ANIM_EPS = 0.001; // epsilon for animation interpolation
 const PANEL_Z_INCREMENT: number = 0.1; // panel overlap increment 
+const UIArray: UI[] = [];
 
 let DEBUG = false;
 
@@ -32,6 +33,48 @@ export function UISetDebug(debug: boolean)
 {
     DEBUG = debug;
 }
+
+// slightly horrible workaround, this redefines OnScriptReload to always run our destruction logic first in before()
+const originalOnScriptReload = Instance.OnScriptReload.bind(Instance);
+Instance.OnScriptReload = (config, ...rest) => 
+{
+    originalOnScriptReload({
+        ...config,
+        before: () => 
+        {
+            // our logic first
+            for (const UI of UIArray) 
+            {
+                UI.Kill();
+            }
+            // user code
+            return config.before?.() as ReturnType<NonNullable<typeof config['before']>>;
+        },
+    }, ...rest);
+};
+
+// workaround for onRoundStart function being global, like this we can have out "our own" onRoundStart function.
+Instance.ConnectOutput(Instance.FindEntityByName("*CSUI.roundstart")!, "onuser1", () => 
+{
+    RegisterThinkCallback();
+});
+
+function RegisterThinkCallback()
+{
+    // same story for think as above
+    Instance.ConnectOutput(Instance.FindEntityByName("*CSUI.timer")!, "ontimer", () => 
+    {
+        for (const UI of UIArray) 
+        {
+            if (UI.ManualThink === false)
+            {
+                UI.Think();    
+            }
+        }
+    });
+}
+
+RegisterThinkCallback();
 
 // main layout object
 interface Layout
@@ -243,6 +286,37 @@ interface PlayerInteraction
     MousePosByPlayer: Map<CSPlayerPawn, Vec3>,
     MouseMovingBy: Set<CSPlayerPawn>
 }
+
+/** Find a UI by name, supports wildcards */
+export function GetUI(name: string): UI | undefined
+{
+    for (const ui of UIArray) 
+    {
+        if (MatchNamePattern(name, ui.Name))
+        {
+            return ui;
+        }
+    }
+
+    return undefined;
+}
+
+/** Find multiple UIs by name, supports wildcards */
+export function GetUIs(name: string): UI[]
+{
+    const returnArray: UI[] = [];
+
+    for (const ui of UIArray) 
+    {
+        if (MatchNamePattern(name, ui.Name))
+        {
+            returnArray.push(ui);
+        }
+    }
+
+    return returnArray;
+}
+
 /**
  * Main UI class
  */
@@ -272,6 +346,19 @@ export class UI
     public AlignX: AlignXType = AlignX.Left;
     /** Y axis alignment of the entire UI relative to its world space origin, uses Root panel size to align.*/
     public AlignY: AlignYType = AlignY.Top;
+    
+    /** Optional name of this UI */
+    public get Name(): string | undefined
+    {
+        return this._Name;
+    }
+    private _Name: string | undefined;
+
+    constructor(name: string | undefined = undefined)
+    {
+        this._Name = name;
+        UIArray.push(this);
+    }
 
     /**
      * Adds a player to the UI, multiple players can use the UI at the same time.  
@@ -337,24 +424,23 @@ export class UI
     // after being clicked until the click is released
     private readonly _InputLockByPlayer: Map<CSPlayerPawn, BaseUIPanel> = new Map();
 
-    /**
-     * Are we in cleanup mode?
-     * Cleanup mode is set when {@link Cleanup()} is called
-     */
-    public get CleanupMode(): boolean
+    public get Dead(): boolean
     {
-        return this._CleanupMode;
+        return this._Dead;
     }
-    private _CleanupMode: boolean = false;
+    private _Dead: boolean = false;
 
     /**
-     * Enters cleanup mode, all panels will delete their game entity "renderable" components.  
-     * Used to handle live reloads, you should call this from the 'before' callback of {@link Instance.OnScriptReload}
+     * Enters cleanup mode, removes itself from UIArray and all panels will delete their game entity "renderable" components.  
      */
-    public Cleanup()
+    public Kill()
     {
-        this._CleanupMode = true;
-        this.Root?.Think();
+        if (this._Dead) return;
+
+        this._Dead = true;
+        this.Root?.Kill();
+        this.Root = undefined;
+        ArrayRemoveByRef<UI>(UIArray, this);
     }
 
     /**
@@ -379,12 +465,23 @@ export class UI
     }
 
     /**
+     * If this is true, then you must call Think() manually from your own code.
+     */
+    public ManualThink: boolean = false;
+    
+    /**
      * Main think function, you should call this once per tick in your own think loop.  
      * Calls into panel think recursively for every panel, starting from Root.
      */
     public Think(): void
     {
-        if (this.Root === undefined || this.CleanupMode)
+        if (this.Root === undefined)
+        {
+            this.Kill();
+            return;
+        }
+        
+        if (this.Dead)
         {
             return;
         }
@@ -474,6 +571,8 @@ export abstract class BaseUIPanel
     {
         this._Name = name;
 
+        this._Dummy = SpawnSingleEntityTemplate("*CSUI.dummy.template");
+
         if (parent instanceof UI)
         {
             this.UI = parent;
@@ -485,6 +584,9 @@ export abstract class BaseUIPanel
             this.UI = parent.UI;
         }
     }
+
+    // used to tell if the round restarted
+    private _Dummy: Entity | undefined;
 
     // abstract methods
     protected abstract Render(worldTransforms: Transforms): void;
@@ -529,19 +631,9 @@ export abstract class BaseUIPanel
         return panels;
     }
 
-    private MatchNamePattern(pattern: string, name: string | undefined): boolean
-    {
-        if (name === undefined)
-        {
-            return false;
-        }
-
-        return new RegExp("^" + pattern.replace(/\*/g, ".*") + "$").test(name);
-    }
-
     private GetPanelsInternal(name: string, panels: BaseUIPanel[])
     {
-        if (this.MatchNamePattern(name, this.Name))
+        if (MatchNamePattern(name, this.Name))
         {
             panels.push(this);
         }
@@ -697,20 +789,46 @@ export abstract class BaseUIPanel
         return parentScale * ownScale * (this.Layout.VisualScale ?? 1);
     }
 
+    private _Dead: boolean = false;
+    public Kill()
+    {
+        if (this._Dead) return;
+
+        this._Dead = true;
+
+        this.Cleanup();
+
+        if (this._Dummy !== undefined && this._Dummy.IsValid())
+        {
+            this._Dummy.Remove();
+        }
+        this._Dummy = undefined;
+
+        for (const child of this._Children)
+        {
+            child.Kill();
+        }
+
+        if (this.UI.Root === this)
+        {
+            this.UI.Root = undefined;
+        }
+    }
+
     /**
      * Called once every tick recursively.  
      * You can manually call this if you need to instantly update state within the same tick.
      */
     public Think(parentWorldTransforms?: Transforms): void
     {
-        
-        if (this.UI.CleanupMode)
+        if (this._Dead)
         {
-            this.Cleanup();
-            for (const child of this._Children)
-            {
-                child.Think(parentWorldTransforms);
-            }
+            return;
+        }
+        
+        if (this._Dummy === undefined || !this._Dummy.IsValid() || this.UI.Dead)
+        {
+            this.Kill();
             return;
         }
 
@@ -1519,7 +1637,7 @@ export class UIPanel extends BaseUIPanel
 
     protected Cleanup(): void 
     {
-        Instance.EntFireAtTarget({ target: this.Visual, input: "kill" });
+        SafeKill(this.Visual);
     }
 }
 
@@ -1693,7 +1811,7 @@ export class TextUIPanel extends BaseUIPanel
     {
         for (const ent of this.TextEnts)
         {
-            Instance.EntFireAtTarget({ target: ent, input: "kill" });
+            SafeKill(ent);
         }
         this.TextEnts.length = 0;
         this.PoolSize = 0;
@@ -1730,17 +1848,17 @@ function ComputeIntersectionBarycentricCoordinates(rayStart: Vec3, rayEnd: Vec3,
 }
 
 /** Take the name of a point_template and return a spawned model.*/
-export function SpawnModelTemplate(templateName: string): BaseModelEntity
+export function SpawnSingleEntityTemplate(templateName: string): Entity
 {
     const template = Instance.FindEntityByName(templateName) as PointTemplate;
 
-    if (template === undefined) Log("Failed to find model template!");
+    if (template === undefined) Log("Failed to find entity template!");
 
-    const model = template.ForceSpawn()![0];
+    const ent = template.ForceSpawn()![0];
 
-    if (model === undefined) Log("Failed to spawn template model!");
+    if (ent === undefined) Log("Failed to spawn template model!");
 
-    return model as BaseModelEntity;
+    return ent;
 }
 
 function LerpNum(c: number, t: number, speed: number): { value: number; done: boolean }
@@ -1775,6 +1893,16 @@ function LerpColor(c: Color, t: Color, speed: number): { value: Color; done: boo
     return { value: done ? OklabToSrgb(tLab) : OklabToSrgb(n), done };
 }
 
+function MatchNamePattern(pattern: string, name: string | undefined): boolean
+{
+    if (name === undefined)
+    {
+        return false;
+    }
+
+    return new RegExp("^" + pattern.replace(/\*/g, ".*") + "$").test(name);
+}
+
 function IsPlayerClicking(player: CSPlayerPawn | undefined)
 {
     return (player?.IsInputPressed(CSInputs.ATTACK) || player?.IsInputPressed(CSInputs.USE)) ?? false;
@@ -1789,6 +1917,14 @@ function Log(msg: any, debugOnly: boolean = false)
     }
 
     Instance.Msg(`CSUI: ${msg}`);
+}
+
+function SafeKill(ent: Entity)
+{
+    if (ent !== undefined && ent.IsValid())
+    {
+        ent.Remove();
+    }
 }
 
 export function Remap(value: number, low1: number, high1: number, low2: number, high2: number) 

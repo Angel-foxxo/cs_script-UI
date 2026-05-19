@@ -11,28 +11,12 @@ Instance.ServerCommand("mp_warmup_pausetimer 1");
 Instance.ServerCommand("mp_force_pick_time 0");
 
 const TestUITarget = Instance.FindEntityByName("testui.target")!;
-let TestUI: UI | undefined = undefined;
 
 UISetDebug(false);
 
-//UISetDebug(true);
-
-Instance.OnPlayerChat(({ text }) => 
-{
-    if (text === "test")
-    {
-        const iconPanels = TestUI!.GetPanels("*iconPanel");
-
-        for (const iconPanel of iconPanels) 
-        {
-            iconPanel.Layout.Width = 30;
-        }
-    }
-});
-
 function SpawnUI()
 {
-    TestUI = new UI();
+    const TestUI = new UI();
     TestUI.AddPlayer(Instance.GetPlayerController(0)!.GetPlayerPawn()!);
     TestUI.Brightness = 2;
     TestUI.AlignX = AlignX.Center;
@@ -41,7 +25,7 @@ function SpawnUI()
     TestUI.Angles = new Euler(TestUITarget.GetAbsAngles());
 
     const root = new InvisUIPanel(TestUI);
-    root.Color = CurrentTheme.App;
+    root.Color = CurrentTheme.UI;
     root.Layout = {
         Width: Size.Fit,
         Height: Size.Fit,
@@ -70,7 +54,7 @@ function SpawnTestUI(parent: BaseUIPanel): UIPanel
     ];
 
     const root = new UIPanel(parent);
-    root.Color = CurrentTheme.App;
+    root.Color = CurrentTheme.UI;
     root.Layout = {
         Width: 140,
         Height: "Fit",
@@ -83,7 +67,7 @@ function SpawnTestUI(parent: BaseUIPanel): UIPanel
     for (let i = 0; i < 6; i++)
     {
         const menuItemPanel = new UIPanel(root);
-        menuItemPanel.Color = CurrentTheme.AppSoft;
+        menuItemPanel.Color = CurrentTheme.UISoft;
         menuItemPanel.Layout = {
             Width: Size.Grow,
             Height: Size.Fit,
@@ -104,7 +88,7 @@ function SpawnTestUI(parent: BaseUIPanel): UIPanel
         };
 
         const sliderPanel = new Slider(menuItemPanel, Orientation.Horizontal);
-        sliderPanel.Color = CurrentTheme.AppSoft;
+        sliderPanel.Color = CurrentTheme.UISoft;
         sliderPanel.SliderThickness = 2;
         sliderPanel.OnValueChanged.Add((t) => 
         {
@@ -151,7 +135,7 @@ function SpawnTestUI(parent: BaseUIPanel): UIPanel
 function SpawnTestUIControlPanel(parent: BaseUIPanel): UIPanel
 {
     const root = new UIPanel(parent);
-    root.Color = CurrentTheme.App;
+    root.Color = CurrentTheme.UI;
     root.Layout = {
         Width: Size.Fit,
         Height: Size.Fit,
@@ -175,7 +159,7 @@ function SpawnTestUIControlPanel(parent: BaseUIPanel): UIPanel
     };
 
     const radioButtonsPanel = new InvisUIPanel(root);
-    radioButtonsPanel.Color = CurrentTheme.AppMiddle;
+    radioButtonsPanel.Color = CurrentTheme.UIMiddle;
     radioButtonsPanel.Layout = {
         Width: Size.Grow,
         Height: Size.Fit,
@@ -188,7 +172,7 @@ function SpawnTestUIControlPanel(parent: BaseUIPanel): UIPanel
     for (let i = 0; i < 3; i++) 
     {
         const radioButtonPanel = new UIPanel(radioButtonsPanel);
-        radioButtonPanel.Color = CurrentTheme.AppMiddle;
+        radioButtonPanel.Color = CurrentTheme.UIMiddle;
         radioButtonPanel.Layout = {
             Width: Size.Grow,
             Height: Size.Fit,
@@ -257,21 +241,9 @@ Instance.OnRoundStart(() =>
 });
 
 Instance.OnScriptReload({ 
-    before:(() => 
-    {
-        TestUI?.Cleanup();
-    }),
-    
+
     after: (() => 
     {
         SpawnUI();
     }),
 });
-
-Instance.SetThink(() => 
-{
-    TestUI?.Think();
-    
-    Instance.SetNextThink(Instance.GetGameTime());
-});
-Instance.SetNextThink(Instance.GetGameTime());

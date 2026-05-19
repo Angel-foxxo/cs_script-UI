@@ -10,30 +10,30 @@ export const DEFAULT_FONT: Fonts = Fonts.Roboto_Regular;
 
 interface ThemeColors
 {
-    /**For background elements like the window itself and titlebars.*/
-    App: Color,
+    /**For background elements like the Root.*/
+    UI: Color,
     /**For elements which need to stand out from the background.*/
-    AppMiddle: Color,
-    /**For elements which need to sit between App and AppSoft colors.*/
-    AppSoft: Color,
-    /**For borders meant to visually separate parts of the interface.*/
-    Border: Color,
+    UIMiddle: Color,
+    /**For elements which need to sit on UIMiddle.*/
+    UISoft: Color,
+    /**For elements meant to pop out slightly.*/
+    UISofter: Color,
     /**For any element which needs contrast from the background, like text*/
     Contrast: Color,
-    /**For any element which needs contrast but doesn't have to be as visible, like inactive text or scrollbars*/
+    /**For any element which needs contrast but doesn't have to be as visible, like inactive text*/
     ContrastSoft: Color,
-    /**For anything that needs to be accented like hovering over a tab*/
+    /**For anything that needs to be accented like hovering over a button*/
     HoverAccent: Color,
     /**For anything that needs to be accented*/
     Accent: Color,
 }
 
 const DarkTheme: ThemeColors = {
-    App: { r:22, g:25, b:32, a:255 },
-    AppMiddle: { r:34, g:39, b:51, a:255 },
-    AppSoft: { r:44, g:49, b:61, a:255 },
+    UI: { r:22, g:25, b:32, a:255 },
+    UIMiddle: { r:34, g:39, b:51, a:255 },
+    UISoft: { r:44, g:49, b:61, a:255 },
 
-    Border: { r:51, g:57, b:74, a:255 },
+    UISofter: { r:51, g:57, b:74, a:255 },
 
     Contrast: { r: 255, g: 255, b: 255, a: 255 },
     ContrastSoft: { r:158, g:159, b:164, a:255 },
@@ -49,7 +49,7 @@ export abstract class BaseControl extends InvisUIPanel
 {
     protected abstract _BasePanel: UIPanel;
 
-    protected _BaseColor: Color = CurrentTheme.Border;
+    protected _BaseColor: Color = CurrentTheme.UISofter;
     protected _HoveredColor: Color = CurrentTheme.HoverAccent;
     protected _ClickedColor: Color = CurrentTheme.Accent;
 
@@ -196,7 +196,7 @@ export class RadioButton extends BaseControl
 {
     private _DotPanel: UIPanel;
     protected _BasePanel: UIPanel;
-    private _DotColor: Color = CurrentTheme.App;
+    private _DotColor: Color = CurrentTheme.UI;
     private _Pressed: boolean = false;
 
     public readonly OnPressed = new Event<[boolean]>();
@@ -326,7 +326,7 @@ export class Slider extends BaseControl
     private _SliderThickness: number = 1;
     private _KnobSize: number = 1;
     private _MouseT: number = 0;
-    private _KnobColor: Color = CurrentTheme.Border;
+    private _KnobColor: Color = CurrentTheme.UISofter;
 
     private _SliderLength = 10;
 
