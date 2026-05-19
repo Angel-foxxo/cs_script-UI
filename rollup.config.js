@@ -4,9 +4,9 @@ import commonjs from '@rollup/plugin-commonjs';
 
 const targets = [
   {
-    input: 'src/CSUI/test.ts',
+    input: 'src/CSUI/example.ts',
     tsconfig: 'src/CSUI/tsconfig.json',
-    output: 'scripts/CSUI/CSUI_test.js'
+    output: 'scripts/CSUI/CSUI_example.js'
   }
 ];
 

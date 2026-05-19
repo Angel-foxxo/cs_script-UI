@@ -41,7 +41,13 @@ function SpawnUI()
 
 function SpawnTestUI(parent: BaseUIPanel): UIPanel
 {
-    const menuItems = ["CMBN", "SCAN IN PROGRESS", "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG", "Lorem          ipsum dolor       sit amet, consectetuer", "!\"@#$%^&*}{_+-=,./\\?:;<>][()`'", "1234567890"];
+    const menuItems = [
+        "Hello World!", 
+        "New line 1\nNew line 2\nNew line 3", 
+        "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG", 
+        "the quick			brown fox jumps over the lazy dog", 
+        "!\"@#$%^&*}{_+-=,./\\?:;<>][()`'", 
+        "1 2  3   4    5     6      7890"];
 
     const menuColors = [
         { r: 80, g: 212, b: 85, a: 255 },
