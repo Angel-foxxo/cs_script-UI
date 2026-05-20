@@ -18,7 +18,7 @@ function SpawnUI()
 {
     const TestUI = new UI();
     TestUI.AddPlayer(Instance.GetPlayerController(0)!.GetPlayerPawn()!);
-    TestUI.Brightness = 2;
+    TestUI.Brightness = 1;
     TestUI.AlignX = AlignX.Left;
     TestUI.AlignY = AlignY.Top;
     TestUI.Origin = new Vec3(TestUITarget.GetAbsOrigin());
@@ -166,7 +166,7 @@ function SpawnTestUIControlPanel(parent: BaseUIPanel)
     SpawnSliderPanel(root, "Width", 1, 150, (p, l, t) => 
     {
         const mainPanel = p.UI.GetPanel("testUI")!;
-        const val = Remap(t, 0, 1, 80, 150);
+        const val = Remap(t, 0, 1, 115, 150);
         mainPanel.Layout.Width = val;
         l.Text = val.toFixed(2);
     });
@@ -295,7 +295,7 @@ function SpawnSliderPanel(parent: BaseUIPanel, labelString: string, sliderDefaul
     const text = new TextUIPanel(root, Fonts.Roboto_Regular, labelString);
     text.Color = CurrentTheme.Contrast;
     text.Layout = {
-        Width: Size.Fit,
+        Width: Size.Grow,
         Height: Size.Fit,
         Flow: Flow.LeftRight,
         AlignX: AlignX.Center,

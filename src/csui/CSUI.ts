@@ -1648,11 +1648,11 @@ export class UIPanel extends BaseUIPanel
 
     protected Render(worldTransforms: Transforms): void
     {
-        this._Visual.Teleport({ position: worldTransforms.Origin.add(this.UI.Angles.right.multiply(-worldTransforms.Width / 2)), angles: this.UI.Angles });
+        this._Visual.Teleport({ position: worldTransforms.Origin, angles: this.UI.Angles });
 
         Instance.EntFireAtTarget({ target: this.Visual, input: "SetControlPoint", value: `1: ${worldTransforms.Width} ${worldTransforms.Height} ${this.Color.a}` });
         Instance.EntFireAtTarget({ target: this.Visual, input: "SetControlPoint", value: `2: ${this.Color.r} ${this.Color.g} ${this.Color.b}` });
-        Instance.EntFireAtTarget({ target: this.Visual, input: "SetControlPoint", value: `3: ${this.UI.Brightness * this.Brightness} 0 0` });
+        Instance.EntFireAtTarget({ target: this.Visual, input: "SetControlPoint", value: `3: ${(this.UI.Brightness * this.Brightness) - 1} 0 0` });
     }
 
     protected Cleanup(): void 
@@ -1795,14 +1795,14 @@ export class TextUIPanel extends BaseUIPanel
                 let index = GetGlyphIndex(char);
 
                 // skip past padding frames, padding frames are added to avoid the particle system showing a ghost of the previous glyph
-                // min needed to ensure last char in atlas displays properly, no clue man
-                const maxIndex = 2 * this.Font.CharCount - 1;
-                index = Math.min((2 * index + 1) / maxIndex, 0.999);
+                // min is needed to ensure last char in atlas displays properly, no clue man
+                const maxIndex = 3 * this.Font.CharCount - 1;
+                index = Math.min((3 * index + 1) / maxIndex, 0.999);
 
                 const textEnt = this.TextEnts[textEntIndex];
                 textEntIndex++;
 
-                Instance.EntFireAtTarget({ target: textEnt, input: "SetControlPoint", value: `2: ${this.UI.Brightness} ${this.Color.a} ${index}` });
+                Instance.EntFireAtTarget({ target: textEnt, input: "SetControlPoint", value: `2: ${Math.max(this.UI.Brightness * this.Brightness, 0.5)} ${this.Color.a} ${index}` });
                 Instance.EntFireAtTarget({ target: textEnt, input: "SetControlPoint", value: `3: ${glyphHeight} ${glyphWidth} 0` });
                 Instance.EntFireAtTarget({ target: textEnt, input: "SetControlPoint", value: `1: ${this.Color.r} ${this.Color.g} ${this.Color.b}` });
                 textEnt.Teleport({ 
