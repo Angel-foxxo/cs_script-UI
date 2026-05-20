@@ -602,12 +602,28 @@ export abstract class BaseUIPanel
         return undefined;
     }
 
+    private _Internal: boolean = false;
+
+    /**
+     * Is this an internal panel? Internal panels are meant for compound controls where the internal implementation panels shouldn't be messed with.  
+     * It will make it so this panel can not be found by any of the GetPanel(s) function.
+     */
+    public get Internal(): boolean
+    {
+        return this._Internal;
+    }
+
+    public set Internal(val: boolean)
+    {
+        this._Internal = val;
+    }
+
     /**
      * Find a single panel in the UI hierarchy by name.
      */
     public GetPanel(name: string): BaseUIPanel | undefined
     {
-        if (this.Name === name)
+        if (this.Name === name && !this.Internal)
         {
             return this;
         }
@@ -635,7 +651,7 @@ export abstract class BaseUIPanel
 
     private GetPanelsInternal(name: string, panels: BaseUIPanel[])
     {
-        if (MatchNamePattern(name, this.Name))
+        if (MatchNamePattern(name, this.Name) && !this.Internal)
         {
             panels.push(this);
         }

@@ -105,6 +105,7 @@ export abstract class BaseControl extends InvisUIPanel
         if (!this._BaseColorInitialized)
         {
             this._BasePanel.Color = this._BaseColor;
+            this._BasePanel.Internal = true;
             this._BaseColorInitialized = true;
         }
         super.Think(parentWorldTransforms);
@@ -165,6 +166,7 @@ export class Button extends BaseControl
         this._TextPanel.Color = CurrentTheme.Contrast;
         this._TextPanel.Layout.Width = Size.Grow;
         this._TextPanel.Layout.Height = Size.Grow;
+        this._TextPanel.Internal = true;
 
         this._BasePanel.OnMouseEnter.Add(() => 
         {
@@ -260,6 +262,7 @@ export class RadioButton extends BaseControl
         this._DotPanel.Color = this.DotColor;
         this._DotPanel.Layout.Width = Size.Grow;
         this._DotPanel.Layout.Height = Size.Grow;
+        this._DotPanel.Internal = true;
 
         this._BasePanel.OnMouseEnter.Add(() => 
         {
@@ -468,9 +471,11 @@ export class Slider extends BaseControl
         this._SliderSpacer = new InvisUIPanel(this._BasePanel);
         this._SliderSpacer.Layout.Height = 0;
         this._SliderSpacer.Layout.Width = 0;
+        this._SliderSpacer.Internal = true;
     
         this._SliderKnob = new UIPanel(this._BasePanel, Shape.Ellipse);
         this._SliderKnob.Color = this.KnobColor;
+        this._SliderKnob.Internal = true;
 
         this.OnMouseDown.Add((_, player) => 
         {
