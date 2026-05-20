@@ -506,6 +506,16 @@ export class UI
     }
 }
 
+interface UIPanelRenderProps
+{
+    width: number;
+    height: number;
+    color: Color;
+    brightness: number;
+    origin: Vec3;
+    angles: Euler;
+}
+
 /**
  * Main abstract UI panel class, does not handle rendering.  
  * All specialised panels inherit from this.
@@ -589,6 +599,47 @@ export abstract class BaseUIPanel
 
     // used to tell if the round restarted
     private _Dummy: Entity | undefined;
+
+    protected _LastRenderProps: UIPanelRenderProps[] = [];
+
+    protected RenderPropsChanged(currentProps: UIPanelRenderProps, lastProps: UIPanelRenderProps | undefined): boolean
+    {
+        if (currentProps.brightness !== lastProps?.brightness)
+        {
+            return true;
+        }
+
+        if (currentProps.width !== lastProps?.width)
+        {
+            return true;
+        }
+        
+        if (currentProps.height !== lastProps?.height)
+        {
+            return true;
+        }
+
+        if (!currentProps.origin.equals(lastProps?.origin))
+        {
+            return true;
+        }
+
+        if (!currentProps.angles.equals(lastProps?.angles))
+        {
+            return true;
+        }
+
+        if (currentProps.color.r !== lastProps?.color.r || 
+            currentProps.color.g !== lastProps?.color.g ||
+            currentProps.color.b !== lastProps?.color.b ||
+            currentProps.color.a !== lastProps?.color.a
+        )
+        {
+            return true;
+        }
+
+        return false;
+    }
 
     // abstract methods
     protected abstract Render(worldTransforms: Transforms): void;
@@ -1588,9 +1639,25 @@ export class ModelUIPanel extends BaseUIPanel
             return;
         }
 
-        this._Visual.Teleport({ position: worldTransforms.Origin, angles: this.UI.Angles });
-        this._Visual.SetModelScale(this.InheritedScale * this.UI.Scale);
-        this._Visual.SetColor(this.Color);
+        const renderProps: UIPanelRenderProps = {
+            width: this.InheritedScale * this.UI.Scale,
+            height: 0,
+            color: this.Color,
+            brightness: 0,
+            origin: worldTransforms.Origin,
+            angles: this.UI.Angles,
+        };
+
+        if (!this.RenderPropsChanged(renderProps, this._LastRenderProps[0]))
+        {
+            return;
+        }
+
+        this._Visual.Teleport({ position: worldTransforms.Origin, angles: renderProps.angles });
+        this._Visual.SetModelScale(renderProps.width);
+        this._Visual.SetColor(renderProps.color);
+
+        this._LastRenderProps[0] = renderProps;
     }
 
     protected Cleanup(): void 
@@ -1648,11 +1715,27 @@ export class UIPanel extends BaseUIPanel
 
     protected Render(worldTransforms: Transforms): void
     {
-        this._Visual.Teleport({ position: worldTransforms.Origin, angles: this.UI.Angles });
+        const renderProps: UIPanelRenderProps = {
+            width: worldTransforms.Width,
+            height: worldTransforms.Height,
+            color: this.Color,
+            brightness: (this.UI.Brightness * this.Brightness) - 1,
+            origin: worldTransforms.Origin,
+            angles: this.UI.Angles,
+        };
 
-        Instance.EntFireAtTarget({ target: this.Visual, input: "SetControlPoint", value: `1: ${worldTransforms.Width} ${worldTransforms.Height} ${this.Color.a}` });
-        Instance.EntFireAtTarget({ target: this.Visual, input: "SetControlPoint", value: `2: ${this.Color.r} ${this.Color.g} ${this.Color.b}` });
-        Instance.EntFireAtTarget({ target: this.Visual, input: "SetControlPoint", value: `3: ${(this.UI.Brightness * this.Brightness) - 1} 0 0` });
+        if (!this.RenderPropsChanged(renderProps, this._LastRenderProps[0]))
+        {
+            return;
+        }
+
+        this._Visual.Teleport({ position: renderProps.origin, angles: renderProps.angles });
+
+        Instance.EntFireAtTarget({ target: this.Visual, input: "SetControlPoint", value: `1: ${renderProps.width} ${renderProps.height} ${renderProps.color.a}` });
+        Instance.EntFireAtTarget({ target: this.Visual, input: "SetControlPoint", value: `2: ${renderProps.color.r} ${renderProps.color.g} ${renderProps.color.b}` });
+        Instance.EntFireAtTarget({ target: this.Visual, input: "SetControlPoint", value: `3: ${renderProps.brightness} 0 0` });
+
+        this._LastRenderProps[0] = renderProps;
     }
 
     protected Cleanup(): void 
@@ -1802,17 +1885,33 @@ export class TextUIPanel extends BaseUIPanel
                 const textEnt = this.TextEnts[textEntIndex];
                 textEntIndex++;
 
-                Instance.EntFireAtTarget({ target: textEnt, input: "SetControlPoint", value: `2: ${Math.max(this.UI.Brightness * this.Brightness, 0.5)} ${this.Color.a} ${index}` });
-                Instance.EntFireAtTarget({ target: textEnt, input: "SetControlPoint", value: `3: ${glyphHeight} ${glyphWidth} 0` });
-                Instance.EntFireAtTarget({ target: textEnt, input: "SetControlPoint", value: `1: ${this.Color.r} ${this.Color.g} ${this.Color.b}` });
-                textEnt.Teleport({ 
-                    position: worldTransforms.Origin
+                const renderProps: UIPanelRenderProps = {
+                    width: glyphWidth,
+                    height: glyphHeight,
+                    color: this.Color,
+                    brightness: Math.max(this.UI.Brightness * this.Brightness, 0.5),
+                    origin: worldTransforms.Origin
                         .add(this.UI.Angles.left.multiply(pen + alignmentOffset))
-                        .add(this.UI.Angles.down.multiply(verticalOffset + (i * this.Font.FontLineHeight * scale))), 
+                        .add(this.UI.Angles.down.multiply(verticalOffset + (i * this.Font.FontLineHeight * scale))),
                     angles: this.UI.Angles,
+                };
+
+                if (!this.RenderPropsChanged(renderProps, this._LastRenderProps[textEntIndex]))
+                {
+                    return;
+                }
+
+                Instance.EntFireAtTarget({ target: textEnt, input: "SetControlPoint", value: `2: ${renderProps.brightness} ${renderProps.color.a} ${index}` });
+                Instance.EntFireAtTarget({ target: textEnt, input: "SetControlPoint", value: `3: ${renderProps.height} ${renderProps.width} 0` });
+                Instance.EntFireAtTarget({ target: textEnt, input: "SetControlPoint", value: `1: ${renderProps.color.r} ${renderProps.color.g} ${renderProps.color.b}` });
+                textEnt.Teleport({ 
+                    position: renderProps.origin, 
+                    angles: renderProps.angles,
                 });
 
                 pen += glyph.advance * scale;
+
+                this._LastRenderProps[textEntIndex] = renderProps;
             }    
         }
 
