@@ -9,7 +9,7 @@ using System.Text;
 //
 static class FontAtlasGenerator
 {
-    const string VERSION = "v1.0.0";
+    const string VERSION = "v1.0.1";
 
     const string BaseChars =
         "� ";
