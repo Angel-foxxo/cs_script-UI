@@ -45,9 +45,9 @@ Instance.OnScriptReload = (config, ...rest) =>
         before: () => 
         {
             // our logic first
-            for (const UI of UIArray) 
+            for (let i = UIArray.length - 1; i >= 0; i--)
             {
-                UI.Kill();
+                UIArray[i].Kill();
             }
             // user code
             return config.before?.() as ReturnType<NonNullable<typeof config['before']>>;
