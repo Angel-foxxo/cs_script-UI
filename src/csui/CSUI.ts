@@ -1703,7 +1703,7 @@ export class ModelUIPanel extends BaseUIPanel
         const renderProps: UIPanelRenderProps = {
             width: this.InheritedScale * this.UI.Scale,
             height: 0,
-            color: this.Color,
+            color: { ...this.Color },
             brightness: 0,
             origin: worldTransforms.Origin,
             angles: this.UI.Angles,
@@ -1780,7 +1780,7 @@ export class UIPanel extends BaseUIPanel
         const renderProps: UIPanelRenderProps = {
             width: worldTransforms.Width,
             height: worldTransforms.Height,
-            color: this.Color,
+            color: { ...this.Color },
             brightness: (this.UI.Brightness * this.Brightness) - 1,
             origin: worldTransforms.Origin,
             angles: this.UI.Angles,
@@ -1968,7 +1968,7 @@ export class TextUIPanel extends BaseUIPanel
                 const renderProps: UIPanelRenderProps = {
                     width: glyphWidth,
                     height: glyphHeight,
-                    color: this.Color,
+                    color: { ...this.Color },
                     brightness: Math.max(this.UI.Brightness * this.Brightness, 0.5),
                     origin: worldTransforms.Origin
                         .add(this.UI.Angles.left.multiply(pen + alignmentOffset))
