@@ -1824,6 +1824,9 @@ export class TextUIPanel extends BaseUIPanel
     private _Text: string = "";
     private _Lines: string[] = [];
 
+    /** Instead of showing a � symbol, don't display invalid characters. */
+    public StripInvalidChars: boolean = false;
+
     public get Text(): string
     {
         return this._Text;
@@ -1947,6 +1950,11 @@ export class TextUIPanel extends BaseUIPanel
                 const alignmentOffset = (glyphWidth) / 2;
 
                 let index = GetGlyphIndex(char);
+
+                if (index === 0 && this.StripInvalidChars)
+                {
+                    continue;
+                }
 
                 // skip past padding frames, padding frames are added to avoid the particle system showing a ghost of the previous glyph
                 // min is needed to ensure last char in atlas displays properly, no clue man
