@@ -16,12 +16,12 @@
 * 
 *   https://github.com/Angel-foxxo/cs_script-UI
 */
-export const VERSION = "v1.1.0";
+export const VERSION = "v1.1.1";
 
 import { Euler, Vec3 } from "@s2ze/math";
 import { BaseModelEntity, Color, CSInputs, CSPlayerPawn, Entity, Instance, PointTemplate } from "cs_script/point_script";
-import { Font } from "./font";
-import { Fonts, FontsMap, GetGlyphIndex } from "./font_definitions";
+import { Font, GetGlyphIndex } from "./font";
+import { Fonts, FontsMap } from "./font_definitions";
 import { Lab, OklabToSrgb, SrgbToOklab } from "./oklab";
 
 const ANIM_EPS = 0.001; // epsilon for animation interpolation
@@ -356,6 +356,28 @@ export class UI
     }
     private _Name: string | undefined;
 
+    protected _Hidden: boolean = false;
+    
+    /** Is the UI hidden? */
+    public get Hidden()
+    {
+        return this._Hidden;
+    }
+
+    /** Hide the entire UI, will make all panels invisible and stop responding to player input. */
+    public Hide()
+    {
+        this._Hidden = true;
+        this.Root?.Hide();
+    }
+
+    /** Show the UI if it was hidden. */
+    public Show()
+    {
+        this._Hidden = false;
+        this.Root?.Show();
+    }
+
     constructor(name: string | undefined = undefined)
     {
         this._Name = name;
@@ -514,6 +536,7 @@ interface UIPanelRenderProps
     brightness: number;
     origin: Vec3;
     angles: Euler;
+    hidden: boolean;
 }
 
 /**
@@ -531,6 +554,36 @@ export abstract class BaseUIPanel
      * The render color of this panel.
      */
     public Color: Color = { r: 255, g: 255, b: 255, a: 255 };
+
+    protected _Hidden: boolean = false;
+    
+    /** Are we hidden> */
+    public get Hidden()
+    {
+        return this._Hidden;
+    }
+
+    /** Hide this panel, will make itself and all child panels invisible and stop responding to player input. */
+    public Hide()
+    {
+        this._Hidden = true;
+
+        for (const child of this._Children) 
+        {
+            child.Hide();
+        }
+    }
+
+    /** Unhide this panel and all its children if we were hidden. */
+    public Show()
+    {
+        this._Hidden = false;
+
+        for (const child of this._Children) 
+        {
+            child.Show();
+        }
+    }
     
     /**
      * Panel Z index, panels with a higher z index get offset more from the surface of their parents, one Z index increment is {@link PANEL_Z_INCREMENT}
@@ -638,6 +691,11 @@ export abstract class BaseUIPanel
             return true;
         }
 
+        if (currentProps.hidden !== lastProps?.hidden)
+        {
+            return true;
+        }
+
         return false;
     }
 
@@ -737,8 +795,8 @@ export abstract class BaseUIPanel
     }
 
     private static readonly DefaultLayout: Layout = {
-        Width: 50,
-        Height: 50,
+        Width: Size.Fit,
+        Height: Size.Fit,
         Flow: Flow.LeftRight,
         Padding: 0,
         ChildGap: 0,
@@ -947,7 +1005,10 @@ export abstract class BaseUIPanel
 
         for (const [pawn, state] of this.UI.Players)
         {
-            this.HandleInteractionForPlayer(pawn, state, transforms);
+            if (!this._Hidden)
+            {
+                this.HandleInteractionForPlayer(pawn, state, transforms);
+            }
         }
 
         for (const child of this._Children)
@@ -1646,6 +1707,7 @@ export class ModelUIPanel extends BaseUIPanel
             brightness: 0,
             origin: worldTransforms.Origin,
             angles: this.UI.Angles,
+            hidden: this._Hidden,
         };
 
         if (!this.RenderPropsChanged(renderProps, this._LastRenderProps[0]))
@@ -1722,10 +1784,18 @@ export class UIPanel extends BaseUIPanel
             brightness: (this.UI.Brightness * this.Brightness) - 1,
             origin: worldTransforms.Origin,
             angles: this.UI.Angles,
+            hidden: this._Hidden,
         };
 
         if (!this.RenderPropsChanged(renderProps, this._LastRenderProps[0]))
         {
+            return;
+        }
+
+        if (this._Hidden)
+        {
+            Instance.EntFireAtTarget({ target: this.Visual, input: "SetControlPoint", value: `1: 0 0 0` });
+            this._LastRenderProps[0] = renderProps;
             return;
         }
 
@@ -1764,6 +1834,7 @@ export class TextUIPanel extends BaseUIPanel
         const normalized = NormalizeWhitespace(text);
         if (normalized === this._Text) return;
         this._Text = normalized;
+        this._LastRenderProps.length = 0;
 
         const needed = this._Text.replace("\n", "").length;
 
@@ -1883,7 +1954,6 @@ export class TextUIPanel extends BaseUIPanel
                 index = Math.min((3 * index + 1) / maxIndex, 0.999);
 
                 const textEnt = this.TextEnts[textEntIndex];
-                textEntIndex++;
 
                 const renderProps: UIPanelRenderProps = {
                     width: glyphWidth,
@@ -1894,20 +1964,29 @@ export class TextUIPanel extends BaseUIPanel
                         .add(this.UI.Angles.left.multiply(pen + alignmentOffset))
                         .add(this.UI.Angles.down.multiply(verticalOffset + (i * this.Font.FontLineHeight * scale))),
                     angles: this.UI.Angles,
+                    hidden: this._Hidden,
                 };
 
                 if (!this.RenderPropsChanged(renderProps, this._LastRenderProps[textEntIndex]))
                 {
-                    return;
+                    continue;
+                }
+
+                textEntIndex++;
+
+                if (this._Hidden)
+                {
+                    Instance.EntFireAtTarget({ target: textEnt, input: "SetControlPoint", value: "3: 0 0 0" });
+
+                    this._LastRenderProps[textEntIndex] = renderProps;
+
+                    continue;
                 }
 
                 Instance.EntFireAtTarget({ target: textEnt, input: "SetControlPoint", value: `2: ${renderProps.brightness} ${renderProps.color.a} ${index}` });
                 Instance.EntFireAtTarget({ target: textEnt, input: "SetControlPoint", value: `3: ${renderProps.height} ${renderProps.width} 0` });
                 Instance.EntFireAtTarget({ target: textEnt, input: "SetControlPoint", value: `1: ${renderProps.color.r} ${renderProps.color.g} ${renderProps.color.b}` });
-                textEnt.Teleport({ 
-                    position: renderProps.origin, 
-                    angles: renderProps.angles,
-                });
+                textEnt.Teleport({ position: renderProps.origin, angles: renderProps.angles });
 
                 pen += glyph.advance * scale;
 
@@ -1918,11 +1997,7 @@ export class TextUIPanel extends BaseUIPanel
         // hide unused pool slots
         for (let i = textEntIndex; i < this.PoolSize; i++)
         {
-            Instance.EntFireAtTarget({ 
-                target: this.TextEnts[i], 
-                input: "SetControlPoint", 
-                value: "3: 0 0 0",
-            });
+            Instance.EntFireAtTarget({ target: this.TextEnts[i], input: "SetControlPoint", value: "3: 0 0 0" });
         }
     }
 

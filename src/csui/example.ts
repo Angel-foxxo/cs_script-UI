@@ -171,6 +171,8 @@ function SpawnTestUIControlPanel(parent: BaseUIPanel)
         l.Text = val.toFixed(2);
     });
 
+    SpawnHideTest(root);
+
     return root;
 }
 
@@ -276,6 +278,57 @@ function SpawnTextAlignmentPanel(parent: BaseUIPanel)
             }
         });
     }
+}
+
+function SpawnHideTest(parent: BaseUIPanel)
+{
+    const root = new UIPanel(parent);
+    root.Color = CurrentTheme.UI;
+    root.Layout = {
+        Width: Size.Fit,
+        Height: Size.Fit,
+        AlignY: AlignY.Top,
+        AlignX: AlignX.Center,
+        Flow: Flow.TopBottom,
+        Padding: 2,
+        ChildGap: 2,
+    };
+
+    const text = new TextUIPanel(root, Fonts.Roboto_Regular, "Hide Test");
+    text.Color = CurrentTheme.Contrast;
+    text.Layout = {
+        Width: Size.Grow,
+        Height: Size.Fit,
+        Flow: Flow.LeftRight,
+        AlignX: AlignX.Center,
+        AlignY: AlignY.Center,
+        ChildGap: 2,
+        Scale: 5,
+    };
+
+    const button = new Button(root, Shape.Rect);
+    button.Text = "Hide";
+    button.TextScale = 5;
+    button.Layout.Width = 23;
+    button.Layout.Height = 10;
+
+    button.OnMouseUp.Add(() => 
+    {
+        const testUI = root.UI.GetPanel("testUI");
+
+        if (testUI?.Hidden)
+        {
+            testUI.Show();
+            button.Text = "Hide";
+        }
+        else
+        {
+            testUI?.Hide();
+            button.Text = "Show";
+        }
+
+    });
+
 }
 
 function SpawnSliderPanel(parent: BaseUIPanel, labelString: string, sliderDefaultVal: number, defaultval: number, callback: (p: BaseUIPanel, l: TextUIPanel, t: number) => void)

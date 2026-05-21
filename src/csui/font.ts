@@ -1,6 +1,14 @@
 /*! Copyright (C) 2026 Angel Cazacu - Licensed under the Mozilla Public License Version 2.0. See <https://www.mozilla.org/en-US/MPL/2.0/> for details. */
 
-import { GetGlyphIndex } from "./font_definitions";
+export const CharToGlyphs: Map<number, number> = new Map<number, number>();
+
+/** 
+ * Returns the index of the char's glpyh in the Glyphs array
+ */
+export function GetGlyphIndex(ch: string): number
+{
+    return CharToGlyphs.get(ch.charCodeAt(0)) ?? 0;
+}
 
 export interface GlyphMetrics {
     /** Glyph pixel width  at baked size */

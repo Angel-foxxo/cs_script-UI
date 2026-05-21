@@ -3,7 +3,7 @@ public static class Templates
     public const string FONT_DEFINITIONS =
 @"_HEADER_TEXT_
 
-import { Font } from ""./font"";
+import { CharToGlyphs, Font } from ""./font"";
 
 export enum Fonts
 {
@@ -11,16 +11,6 @@ _FONT_ENUM_LIST_
 }
 
 export const FontsMap: Map<Fonts, Font> = new Map<Fonts, Font>();
-
-export const CharToGlyphs: Map<number, number> = new Map<number, number>();
-
-/** 
- * Returns the index of the char's glpyh in the Glyphs array
- */
-export function GetGlyphIndex(ch: string): number
-{
-    return CharToGlyphs.get(ch.charCodeAt(0)) ?? 0;
-}
 
 _FONT_CLASSES_
 _FONT_MAP_ENTRIES_
