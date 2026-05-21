@@ -16,7 +16,7 @@
 * 
 *   https://github.com/Angel-foxxo/cs_script-UI
 */
-export const VERSION = "v1.1.1";
+export const VERSION = "v1.1.2";
 
 import { Euler, Vec3 } from "@s2ze/math";
 import { BaseModelEntity, Color, CSInputs, CSPlayerPawn, Entity, Instance, PointTemplate } from "cs_script/point_script";
