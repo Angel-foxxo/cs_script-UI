@@ -1953,7 +1953,9 @@ export class TextUIPanel extends BaseUIPanel
                 const maxIndex = 3 * this.Font.CharCount - 1;
                 index = Math.min((3 * index + 1) / maxIndex, 0.999);
 
-                const textEnt = this.TextEnts[textEntIndex];
+                const slotIndex = textEntIndex;
+                textEntIndex++;
+                const textEnt = this.TextEnts[slotIndex];
 
                 const renderProps: UIPanelRenderProps = {
                     width: glyphWidth,
@@ -1967,18 +1969,17 @@ export class TextUIPanel extends BaseUIPanel
                     hidden: this._Hidden,
                 };
 
-                if (!this.RenderPropsChanged(renderProps, this._LastRenderProps[textEntIndex]))
+                pen += glyph.advance * scale;
+
+                if (!this.RenderPropsChanged(renderProps, this._LastRenderProps[slotIndex]))
                 {
                     continue;
                 }
-
-                textEntIndex++;
+                this._LastRenderProps[slotIndex] = renderProps;
 
                 if (this._Hidden)
                 {
                     Instance.EntFireAtTarget({ target: textEnt, input: "SetControlPoint", value: "3: 0 0 0" });
-
-                    this._LastRenderProps[textEntIndex] = renderProps;
 
                     continue;
                 }
@@ -1987,10 +1988,6 @@ export class TextUIPanel extends BaseUIPanel
                 Instance.EntFireAtTarget({ target: textEnt, input: "SetControlPoint", value: `3: ${renderProps.height} ${renderProps.width} 0` });
                 Instance.EntFireAtTarget({ target: textEnt, input: "SetControlPoint", value: `1: ${renderProps.color.r} ${renderProps.color.g} ${renderProps.color.b}` });
                 textEnt.Teleport({ position: renderProps.origin, angles: renderProps.angles });
-
-                pen += glyph.advance * scale;
-
-                this._LastRenderProps[textEntIndex] = renderProps;
             }    
         }
 
