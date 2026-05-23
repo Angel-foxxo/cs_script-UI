@@ -1715,6 +1715,13 @@ export class ModelUIPanel extends BaseUIPanel
             return;
         }
 
+        if (this._Hidden)
+        {        
+            this._Visual.SetModelScale(0);
+            this._LastRenderProps[0] = renderProps;
+            return;
+        }
+
         this._Visual.Teleport({ position: worldTransforms.Origin, angles: renderProps.angles });
         this._Visual.SetModelScale(renderProps.width);
         this._Visual.SetColor(renderProps.color);
