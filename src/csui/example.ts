@@ -59,7 +59,7 @@ function SpawnTestUI(parent: BaseUIPanel)
         
     ];
 
-    const root = new UIPanel(parent, Shape.Rect, "testUI");
+    const root = new UIPanel(parent, Shape.RoundedRect(4), "testUI");
     root.Color = CurrentTheme.UI;
     root.Layout = {
         Width: 150,
@@ -72,7 +72,7 @@ function SpawnTestUI(parent: BaseUIPanel)
 
     for (let i = 0; i < 6; i++)
     {
-        const menuItemPanel = new UIPanel(root);
+        const menuItemPanel = new UIPanel(root, Shape.RoundedRect(2));
         menuItemPanel.Color = CurrentTheme.UISoft;
         menuItemPanel.Layout = {
             Width: Size.Grow,
@@ -101,7 +101,7 @@ function SpawnTestUI(parent: BaseUIPanel)
             textPanel.Layout.Scale = ((1 - t) * 5);
         });
 
-        const buttonPanel = new Button(menuItemPanel, Shape.Rect, i + "iconPanel");
+        const buttonPanel = new Button(menuItemPanel, Shape.RoundedRect(2), i + "iconPanel");
         buttonPanel.Text = "test button";
         buttonPanel.TextScale = 4;
         buttonPanel.Layout = {
@@ -178,7 +178,7 @@ function SpawnTestUIControlPanel(parent: BaseUIPanel)
 
 function SpawnTextAlignmentPanel(parent: BaseUIPanel)
 {
-    const root = new UIPanel(parent);
+    const root = new UIPanel(parent, Shape.RoundedRect(2));
     root.Color = CurrentTheme.UI;
     root.Layout = {
         Width: Size.Fit,
@@ -215,7 +215,7 @@ function SpawnTextAlignmentPanel(parent: BaseUIPanel)
 
     for (let i = 0; i < 3; i++) 
     {
-        const radioButtonPanel = new UIPanel(radioButtonsPanel);
+        const radioButtonPanel = new UIPanel(radioButtonsPanel, Shape.RoundedRect(2));
         radioButtonPanel.Color = CurrentTheme.UIMiddle;
         radioButtonPanel.Layout = {
             Width: Size.Grow,
@@ -282,7 +282,7 @@ function SpawnTextAlignmentPanel(parent: BaseUIPanel)
 
 function SpawnHideTest(parent: BaseUIPanel)
 {
-    const root = new UIPanel(parent);
+    const root = new UIPanel(parent, Shape.RoundedRect(2));
     root.Color = CurrentTheme.UI;
     root.Layout = {
         Width: Size.Fit,
@@ -306,7 +306,7 @@ function SpawnHideTest(parent: BaseUIPanel)
         Scale: 5,
     };
 
-    const button = new Button(root, Shape.Rect);
+    const button = new Button(root, Shape.RoundedRect(2));
     button.Text = "Hide";
     button.TextScale = 5;
     button.Layout.Width = 23;
@@ -333,7 +333,7 @@ function SpawnHideTest(parent: BaseUIPanel)
 
 function SpawnSliderPanel(parent: BaseUIPanel, labelString: string, sliderDefaultVal: number, defaultval: number, callback: (p: BaseUIPanel, l: TextUIPanel, t: number) => void)
 {
-    const root = new UIPanel(parent);
+    const root = new UIPanel(parent, Shape.RoundedRect(2));
     root.Color = CurrentTheme.UI;
     root.Layout = {
         Width: Size.Fit,
@@ -357,7 +357,7 @@ function SpawnSliderPanel(parent: BaseUIPanel, labelString: string, sliderDefaul
         Scale: 5,
     };
 
-    const parentPanel = new UIPanel(root);
+    const parentPanel = new UIPanel(root, Shape.RoundedRect(2));
     parentPanel.Color = CurrentTheme.UIMiddle;
     parentPanel.Layout = {
         Width: Size.Fit,

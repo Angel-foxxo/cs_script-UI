@@ -55,7 +55,7 @@ Instance.OnScriptReload = (config, ...rest) =>
     }, ...rest);
 };
 
-// workaround for onRoundStart function being global, like this we can have out "our own" onRoundStart function.
+// workaround for onRoundStart function being global, like this we can have "our own" onRoundStart function.
 Instance.ConnectOutput(Instance.FindEntityByName("*CSUI.roundstart")!, "onuser1", () => 
 {
     RegisterThinkCallback();
@@ -175,12 +175,21 @@ export enum Flow
  * 
  * - Rect - Makes the panel render as a rectangle.
  * - Ellipse - Makes the panel render as an ellipse.
+ * - RoundedRect - Makes the panel render as a rectangle with rounded corners.
  */
-export enum Shape
-{
-    Rect,
-    Ellipse,
-}
+export const Shape = {
+    Rect: "Rect",
+    Ellipse: "Ellipse",
+    RoundedRect: (value: number) => ({ type: "RoundedRect" as const, value }),
+} as const;
+
+/**
+ * The type of {@link Shape} values.
+ * See {@link Shape} for field descriptions.
+ */
+export type ShapeType =
+    | Exclude<(typeof Shape)[keyof typeof Shape], (...args: never[]) => unknown>
+    | ReturnType<typeof Shape.RoundedRect>;
 
 /**
  * An object representing panel transforms used for transforms after layouting which are not quite world space yet,
@@ -1737,49 +1746,63 @@ export class ModelUIPanel extends BaseUIPanel
 
 export class UIPanel extends BaseUIPanel
 {
-    private _Visual: Entity;
+    private _VisualEnts: Entity[] = [];
 
-    public get Visual(): Entity
+    public get VisualEnts(): Entity[]
     {
-        return this._Visual;
+        return this._VisualEnts;
     }
 
-    constructor(parent: BaseUIPanel | UI, shape: Shape = Shape.Rect, name: string | undefined = undefined)
+    private Shape: ShapeType;
+
+    constructor(parent: BaseUIPanel | UI, shape: ShapeType = Shape.Rect, name: string | undefined = undefined)
     {
         super(parent, name);
 
-        let particleTemplateName = "";
+        this.Shape = shape;
 
-        switch (shape) 
+        if (shape === Shape.Rect)
         {
-            case Shape.Rect:
-                particleTemplateName = "*csui.particle.panel.template";
-                break;
+            const particle = SpawnSingleEntityTemplate("*csui.particle.panel.template");    
+        
+            this._VisualEnts.push(particle);
+            Instance.EntFireAtTarget({ target: particle, input: "start" });
+        }
+        else if (shape === Shape.Ellipse)
+        {
+            const particle = SpawnSingleEntityTemplate("*csui.particle.panel.circle.template");    
+        
+            this._VisualEnts.push(particle);
+            Instance.EntFireAtTarget({ target: particle, input: "start" });
+        }
+        else if (shape.type === "RoundedRect")
+        {
 
-            case Shape.Ellipse:
-                particleTemplateName = "*csui.particle.panel.circle.template";
-                break;
+            // can draw a rounded rect using 2 quads and 4 circles like so:
 
-            default:
-                break;
+            // ||||||               ◯     ◯
+            // ||||||   ##########
+            // ||||||   ##########
+            // ||||||               ◯     ◯
+
+            // ◯|||||◯
+            // ##|#|#|##
+            // ##|#|#|##
+            // ◯|||||◯  
+
+            this._VisualEnts.push(SpawnSingleEntityTemplate("*csui.particle.panel.template"));    
+            this._VisualEnts.push(SpawnSingleEntityTemplate("*csui.particle.panel.template"));    
+            this._VisualEnts.push(SpawnSingleEntityTemplate("*csui.particle.panel.circle.template"));    
+            this._VisualEnts.push(SpawnSingleEntityTemplate("*csui.particle.panel.circle.template"));    
+            this._VisualEnts.push(SpawnSingleEntityTemplate("*csui.particle.panel.circle.template"));    
+            this._VisualEnts.push(SpawnSingleEntityTemplate("*csui.particle.panel.circle.template"));    
+        
+            for (const ent of this._VisualEnts) 
+            {
+                Instance.EntFireAtTarget({ target: ent, input: "start" });
+            }
         }
         
-        const particlePanelTemplate = Instance.FindEntityByName(particleTemplateName) as PointTemplate;
-        if (particlePanelTemplate === undefined || !particlePanelTemplate.IsValid())
-        {
-            Log("Failed to find particle panel template");
-        }
-
-        const particlePanel = particlePanelTemplate.ForceSpawn();
-
-        if (particlePanel === undefined || particlePanel.length === 0 || !particlePanel[0].IsValid())
-        {
-            Log("Failed to spawn particle panel");
-        }
-
-        this._Visual = particlePanel![0];
-
-        Instance.EntFireAtTarget({ target: this.Visual, input: "start" });
     }
 
     protected Render(worldTransforms: Transforms): void
@@ -1801,23 +1824,85 @@ export class UIPanel extends BaseUIPanel
 
         if (this._Hidden)
         {
-            Instance.EntFireAtTarget({ target: this.Visual, input: "SetControlPoint", value: `1: 0 0 0` });
+            for (const ent of this._VisualEnts) 
+            {
+                Instance.EntFireAtTarget({ target: ent, input: "SetControlPoint", value: `1: 0 0 0` });
+
+            }
             this._LastRenderProps[0] = renderProps;
             return;
         }
+        
+        for (let i = 0; i < this._VisualEnts.length; i++) 
+        {
+            const ent = this._VisualEnts[i];
+            let pos = renderProps.origin;
+            let width = renderProps.width;
+            let height = renderProps.height;
 
-        this._Visual.Teleport({ position: renderProps.origin, angles: renderProps.angles });
+            if (typeof this.Shape === "object" && this.Shape.type === "RoundedRect")
+            {
+                switch (i) 
+                {
+                    // horizontal rect
+                    case 0:
+                        pos = renderProps.origin.add(new Vec3(0, 0, -this.Shape.value));
+                        height = renderProps.height - (this.Shape.value * 2);
+                        width = renderProps.width;
+                        break;
+                    // vertical rect
+                    case 1:
+                        pos = renderProps.origin.add(new Vec3(0, this.Shape.value, 0));
+                        width = renderProps.width - (this.Shape.value * 2);
+                        height = renderProps.height;
+                        break;
+                    // top left circle
+                    case 2:
+                        pos = renderProps.origin;
+                        width = this.Shape.value * 2;
+                        height = this.Shape.value * 2;
+                        break;
+                    // top right circle
+                    case 3:
+                        width = this.Shape.value * 2;
+                        height = this.Shape.value * 2;
+                        pos = renderProps.origin.add(new Vec3(0, renderProps.width - (this.Shape.value * 2), 0));
+                        break;
+                    // bottom right circle
+                    case 4:
+                        width = this.Shape.value * 2;
+                        height = this.Shape.value * 2;
+                        pos = renderProps.origin.add(new Vec3(0, renderProps.width - (this.Shape.value * 2), -renderProps.height + (this.Shape.value * 2)));
+                        break;
+                    // bottom left circle
+                    case 5:
+                        width = this.Shape.value * 2;
+                        height = this.Shape.value * 2;
+                        pos = renderProps.origin.add(new Vec3(0, 0, -renderProps.height + (this.Shape.value * 2)));   
+                        break;
+                
+                    default:
+                        break;
+                }
+            }
+        
+            ent.Teleport({ position: pos, angles: renderProps.angles });
 
-        Instance.EntFireAtTarget({ target: this.Visual, input: "SetControlPoint", value: `1: ${renderProps.width} ${renderProps.height} ${renderProps.color.a}` });
-        Instance.EntFireAtTarget({ target: this.Visual, input: "SetControlPoint", value: `2: ${renderProps.color.r} ${renderProps.color.g} ${renderProps.color.b}` });
-        Instance.EntFireAtTarget({ target: this.Visual, input: "SetControlPoint", value: `3: ${renderProps.brightness} 0 0` });
+            Instance.EntFireAtTarget({ target: ent, input: "SetControlPoint", value: `1: ${width} ${height} ${renderProps.color.a}` });
+            Instance.EntFireAtTarget({ target: ent, input: "SetControlPoint", value: `2: ${renderProps.color.r} ${renderProps.color.g} ${renderProps.color.b}` });
+            Instance.EntFireAtTarget({ target: ent, input: "SetControlPoint", value: `3: ${renderProps.brightness} 0 0` });
 
+        }
+        
         this._LastRenderProps[0] = renderProps;
     }
 
     protected Cleanup(): void 
     {
-        SafeKill(this.Visual);
+        for (const ent of this._VisualEnts) 
+        {
+            SafeKill(ent);
+        }
     }
 }
 
