@@ -3,5 +3,8 @@
 	"compilerOptions": 
   {
     "types": ["@s2ze/types/autoimport", "@s2ze/types/autoimport/extended", "node"]
-  }
+  },
+  "exclude": [
+    "src/CSUI/FontAtlasGenerator"
+  ]
 }
