@@ -1,7 +1,7 @@
 /*! Copyright (C) 2026 Angel Cazacu - Licensed under the Mozilla Public License Version 2.0. See <https://www.mozilla.org/en-US/MPL/2.0/> for details. */
 
 import { Color, CSPlayerPawn } from "cs_script/point_script";
-import { AlignX, AlignY, AnimationValueTypes, BaseUIPanel, Event, Flow, InvisUIPanel, Remap, Shape, Size, TextUIPanel, Transforms, UIPanel } from "./CSUI";
+import { AlignX, AlignY, AnimationValueTypes, BaseUIPanel, Event, Flow, InvisUIPanel, Remap, Shape, ShapeType, Size, TextUIPanel, Transforms, UIPanel } from "./CSUI";
 import { Fonts } from "./font_definitions";
 
 export const DEFAULT_FONT: Fonts = Fonts.Roboto_Regular;
@@ -151,7 +151,7 @@ export class Button extends BaseControl
         this._TextPanel.Layout.Scale = scale;
     }
 
-    constructor(parent: BaseUIPanel, shape: Shape = Shape.Rect, name: string | undefined = undefined)
+    constructor(parent: BaseUIPanel, shape: ShapeType = Shape.Rect, name: string | undefined = undefined)
     {
         super(parent, name);
 

@@ -20,6 +20,7 @@ export default targets.map(({ input, output, tsconfig }) => ({
   plugins: [
     typescript({
       tsconfig,
+      exclude: ["src/CSUI/FontAtlasGenerator/**"],
     }),
     nodeResolve(),
     commonjs()

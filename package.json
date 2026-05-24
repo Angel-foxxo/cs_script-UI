@@ -1,12 +1,14 @@
 {
   "dependencies": {
+    "@napi-rs/canvas": "^1.0.0",
     "@s2ze/debug": "^2.13.0",
     "@s2ze/math": "^2.13.0",
     "@s2ze/scheduler": "^2.13.0",
     "@s2ze/tsconfig": "^2.11.0",
     "@s2ze/types": "^2.13.0",
     "jiti": "^2.7.0",
-    "stylistic": "^0.2.4"
+    "stylistic": "^0.2.4",
+    "uuid": "^14.0.0"
   },
   "type": "module",
   "devDependencies": {
@@ -15,6 +17,7 @@
     "@rollup/plugin-node-resolve": "^16.0.1",
     "@rollup/plugin-typescript": "^12.1.4",
     "@stylistic/eslint-plugin": "^5.10.0",
+    "@types/node": "^25.9.1",
     "eslint": "^10.3.0",
     "globals": "^17.6.0",
     "rollup": "^4.52.0",
@@ -24,6 +27,7 @@
   },
   "scripts": {
     "build": "rollup -c",
-    "start": "rollup -c --watch"
+    "start": "rollup -c --watch",
+    "generate-fonts": "node --import jiti/register src/csui/FontAtlasGenerator/FontAtlasGenerator.ts"
   }
 }

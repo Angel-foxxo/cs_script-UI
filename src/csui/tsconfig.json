@@ -1,3 +1,7 @@
 {
-	"extends": "@s2ze/tsconfig"
+  "extends": "@s2ze/tsconfig", 
+	"compilerOptions": 
+  {
+    "types": ["@s2ze/types/autoimport", "@s2ze/types/autoimport/extended", "node"]
+  }
 }
