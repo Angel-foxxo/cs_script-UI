@@ -945,14 +945,26 @@ export abstract class BaseUIPanel
         }
         this._Dummy = undefined;
 
-        for (const child of this._Children)
-        {
-            child.Kill();
-        }
+        this.KillChildren();
 
         if (this.UI.Root === this)
         {
             this.UI.Root = undefined;
+        }
+
+        if (this._Parent !== undefined)
+        {
+            ArrayRemoveByRef<BaseUIPanel>(this._Parent._Children, this);
+        }
+    }
+
+    /** Kills all the children of this panel. */
+    public KillChildren()
+    {
+        // loop children backwards so we can immediatly remove dead children from their parents
+        for (let i = this._Children.length - 1; i >= 0; i--)
+        {
+            this._Children[i].Kill();
         }
     }
 
@@ -1842,17 +1854,21 @@ export class UIPanel extends BaseUIPanel
 
             if (typeof this.Shape === "object" && this.Shape.type === "RoundedRect")
             {
+                pos = Vec3.Zero;
+                height = 0;
+                width = 0;
+
                 switch (i) 
                 {
                     // horizontal rect
                     case 0:
-                        pos = renderProps.origin.add(new Vec3(0, 0, -this.Shape.value));
+                        pos = renderProps.origin.add(renderProps.angles.up.multiply(-this.Shape.value));
                         height = renderProps.height - (this.Shape.value * 2);
                         width = renderProps.width;
                         break;
                     // vertical rect
                     case 1:
-                        pos = renderProps.origin.add(new Vec3(0, this.Shape.value, 0));
+                        pos = renderProps.origin.add(renderProps.angles.right.multiply(-this.Shape.value));
                         width = renderProps.width - (this.Shape.value * 2);
                         height = renderProps.height;
                         break;
@@ -1866,19 +1882,19 @@ export class UIPanel extends BaseUIPanel
                     case 3:
                         width = this.Shape.value * 2;
                         height = this.Shape.value * 2;
-                        pos = renderProps.origin.add(new Vec3(0, renderProps.width - (this.Shape.value * 2), 0));
+                        pos = renderProps.origin.add(renderProps.angles.left.multiply(renderProps.width - (this.Shape.value * 2)));
                         break;
                     // bottom right circle
                     case 4:
                         width = this.Shape.value * 2;
                         height = this.Shape.value * 2;
-                        pos = renderProps.origin.add(new Vec3(0, renderProps.width - (this.Shape.value * 2), -renderProps.height + (this.Shape.value * 2)));
+                        pos = renderProps.origin.add(renderProps.angles.left.multiply(renderProps.width - (this.Shape.value * 2)).add(renderProps.angles.up.multiply(-renderProps.height + (this.Shape.value * 2))));
                         break;
                     // bottom left circle
                     case 5:
                         width = this.Shape.value * 2;
                         height = this.Shape.value * 2;
-                        pos = renderProps.origin.add(new Vec3(0, 0, -renderProps.height + (this.Shape.value * 2)));   
+                        pos = renderProps.origin.add(renderProps.angles.up.multiply(-renderProps.height + (this.Shape.value * 2)));   
                         break;
                 
                     default:
